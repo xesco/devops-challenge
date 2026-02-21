@@ -39,7 +39,7 @@ spec:
                 secretKeyRef:
                   name: postgres-credentials
                   key: POSTGRES_DB
-            - name: DATABASE_URL
+            - name: POSTGRES_PRISMA_URL
               value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?schema=public
           resources:
             requests:

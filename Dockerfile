@@ -31,6 +31,7 @@ RUN corepack enable && corepack prepare pnpm@10.30.1 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./
 COPY --from=deps /app/prisma ./prisma
+COPY prisma.config.ts ./
 
 ENTRYPOINT ["pnpm", "exec", "prisma", "migrate", "deploy"]
 
