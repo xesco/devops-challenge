@@ -9,7 +9,8 @@ TAG      ?= $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
     -o jsonpath='{.spec.template.spec.containers[0].image}' | grep -o '[^:]*$$')
 
 .DEFAULT_GOAL := help
-.PHONY: create destroy deploy migrate rollout-wait show-ip cd-test-apply cd-test-revert help
+.PHONY: create destroy deploy migrate rollout-wait show-ip \
+       cd-test-apply cd-test-revert cd-test-k8s-apply cd-test-k8s-revert help
 
 create: ## Provision infrastructure (state bucket + Terraform + GKE creds)
 	@bash scripts/create.sh
@@ -18,8 +19,8 @@ destroy: ## Tear down all infrastructure and delete state bucket
 	@bash scripts/destroy.sh
 
 help: ## Show available targets
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  %-16s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  %-22s %s\n", $$1, $$2}'
 
 deploy: ## Set image tag and apply main manifests
 	cd $(OVERLAY) && kustomize edit set image \
@@ -49,3 +50,9 @@ cd-test-apply: ## Push a test change (new currency + heading) to trigger CD
 
 cd-test-revert: ## Revert the test change and trigger CD
 	@bash scripts/cd-test-revert.sh
+
+cd-test-k8s-apply: ## Push a k8s-only change (scale + probe), no approval
+	@bash scripts/cd-test-k8s-apply.sh
+
+cd-test-k8s-revert: ## Revert the k8s-only change, no approval
+	@bash scripts/cd-test-k8s-revert.sh
