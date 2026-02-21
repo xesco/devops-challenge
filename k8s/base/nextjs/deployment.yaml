@@ -71,7 +71,7 @@ spec:
               path: /
               port: 3000
             initialDelaySeconds: 15
-            periodSeconds: 15
+            periodSeconds: 30
             timeoutSeconds: 5
           securityContext:
             readOnlyRootFilesystem: true
