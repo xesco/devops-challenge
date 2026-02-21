@@ -17,7 +17,7 @@ VALUES ('Litecoin', 'ltc', '${ICON}', 84.12)
 ON CONFLICT ("code") DO NOTHING;
 SQL
 
-# Mark heading (idempotent — skip if already tagged)
+# Mark heading (idempotent - skip if already tagged)
 grep -q '(CD Test)' app/page.tsx || sed -i 's/LatestPrices/LatestPrices (CD Test)/' app/page.tsx
 
 # Commit and push

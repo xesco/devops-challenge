@@ -12,4 +12,4 @@ resources:
   - nextjs/pdb.yaml
   # namespace is managed by Terraform (kubernetes.tf).
   # migration-job.yaml is managed by k8s/base/migration/ and applied
-  # conditionally by CI/CD — only when application code changes.
+  # conditionally by CI/CD - only when application code changes.

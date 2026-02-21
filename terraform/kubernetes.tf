@@ -1,4 +1,4 @@
-# Authenticate to GKE so the kubernetes provider can manage in-cluster resources.
+# Authenticate to GKE so the kubernetes provider can manage in-cluster resources
 data "google_client_config" "default" {}
 
 provider "kubernetes" {

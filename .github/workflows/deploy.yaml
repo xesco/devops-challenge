@@ -121,7 +121,7 @@ jobs:
           make show-ip
 
   # Deploy: k8s manifests only (no new image).
-  # No approval needed — reuses the image already running in the cluster.
+  # No approval needed - reuses the image already running in the cluster.
   deploy-k8s-only:
     needs: [detect-changes, build-and-push]
     if: >-

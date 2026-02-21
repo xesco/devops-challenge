@@ -21,7 +21,7 @@ services:
     restart: unless-stopped
     environment:
       # Credentials injected at runtime from .env (git-ignored) or a secrets
-      # manager — never hardcoded in this file.
+      # manager - never hardcoded in this file.
       POSTGRES_PRISMA_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/currencies?schema=public
     ports:
       - 3000:3000

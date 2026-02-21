@@ -7,8 +7,6 @@ command -v terraform >/dev/null 2>&1 || { echo "terraform not found" >&2; exit 1
 command -v gh        >/dev/null 2>&1 || { echo "gh CLI not found" >&2; exit 1; }
 gcloud auth print-access-token >/dev/null 2>&1 \
   || { echo "Not authenticated with gcloud" >&2; exit 1; }
-gh auth status >/dev/null 2>&1 \
-  || { echo "Not authenticated with gh" >&2; exit 1; }
 
 # Project settings
 PROJECT_ID=$(gcloud config get project 2>/dev/null)

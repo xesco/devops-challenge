@@ -20,9 +20,8 @@ resource "google_project_iam_member" "deployer_gke_developer" {
   member  = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-# SA key for GitHub Actions secret (GCP_SA_KEY)
-# Note: private key material lives in local Terraform state.
-# Production should use Workload Identity Federation instead.
+# SA key for GitHub Actions - key material lives in local state
+# Production should use Workload Identity Federation instead
 resource "google_service_account_key" "deployer_key" {
   service_account_id = google_service_account.deployer.name
 }

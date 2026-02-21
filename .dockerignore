@@ -4,21 +4,21 @@
 # Ignore node_modules folder
 node_modules
 
-# Ignore all .env variants — no local secrets should ever enter the build context
+# Ignore all .env variants - no local secrets should ever enter the build context
 .env*
 
 # Ignore .next and .turbo folders
 .next
 .turbo
 
-# Prisma generated client — regenerated inside the build by the deps stage.
+# Prisma generated client - regenerated inside the build by the deps stage.
 # Stale host-side generated files must not shadow the freshly generated ones.
 prisma/generated
 
-# Documentation — not needed in the image
+# Documentation - not needed in the image
 *.md
 
-# Infrastructure / CI — not needed in the image
+# Infrastructure / CI - not needed in the image
 terraform/
 k8s/
 scripts/

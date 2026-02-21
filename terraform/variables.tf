@@ -14,8 +14,6 @@ variable "region" {
   default     = "us-central1"
 }
 
-# GitHub
-
 variable "github_owner" {
   description = "GitHub user or organization that owns the repository"
   type        = string
