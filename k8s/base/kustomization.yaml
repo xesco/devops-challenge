@@ -10,4 +10,5 @@ resources:
   - nextjs/deployment.yaml
   - nextjs/service.yaml
   - nextjs/hpa.yaml
-  - nextjs/migration-job.yaml
+  # migration-job.yaml is managed by k8s/base/migration/ and applied
+  # conditionally by CI/CD — only when application code changes.

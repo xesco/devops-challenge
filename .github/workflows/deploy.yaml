@@ -128,7 +128,16 @@ jobs:
         working-directory: k8s/overlays/production
         run: |
           kustomize edit set image \
-            nextjs=${REGISTRY}/nextjs:${{ steps.resolve-tag.outputs.tag }} \
+            nextjs=${REGISTRY}/nextjs:${{ steps.resolve-tag.outputs.tag }}
+
+      - name: Apply manifests
+        run: kubectl apply -k k8s/overlays/production
+
+      - name: Set migration image tag
+        if: needs.detect-changes.outputs.app == 'true'
+        working-directory: k8s/overlays/production/migration
+        run: |
+          kustomize edit set image \
             migrator=${REGISTRY}/migrator:${{ steps.resolve-tag.outputs.tag }}
 
       - name: Delete previous migration Job (if exists)
@@ -136,8 +145,9 @@ jobs:
         run: |
           kubectl -n moonpay delete job prisma-migrate --ignore-not-found
 
-      - name: Apply manifests
-        run: kubectl apply -k k8s/overlays/production
+      - name: Apply migration Job
+        if: needs.detect-changes.outputs.app == 'true'
+        run: kubectl apply -k k8s/overlays/production/migration
 
       - name: Wait for migration Job
         if: needs.detect-changes.outputs.app == 'true'
