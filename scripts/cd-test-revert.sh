@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-git diff --quiet && git diff --cached --quiet \
+git diff --quiet && git diff --cached --quiet && test -z "$(git ls-files --others --exclude-standard)" \
   || { echo "Working tree is dirty. Commit or stash changes first." >&2; exit 1; }
 
 # Create migration
@@ -18,7 +18,7 @@ sed -i 's/LatestPrices (CD Test)/LatestPrices/' app/page.tsx
 
 # Commit and push
 git add prisma/migrations/ app/page.tsx
-git commit -m "CD test: remove Litecoin and revert heading"
+git diff --cached --quiet || git commit -m "CD test: remove Litecoin and revert heading"
 git push origin main
 
 REPO_URL=$(gh repo view --json url -q .url)

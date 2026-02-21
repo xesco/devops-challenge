@@ -14,10 +14,12 @@ _resolve-image:
 ifndef REGISTRY
 	$(eval REGISTRY := $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
 		-o jsonpath='{.spec.template.spec.containers[0].image}' | sed 's|/nextjs:.*||'))
+	@test -n "$(REGISTRY)" || { echo "Failed to resolve REGISTRY from cluster" >&2; exit 1; }
 endif
 ifndef TAG
 	$(eval TAG := $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
 		-o jsonpath='{.spec.template.spec.containers[0].image}' | grep -o '[^:]*$$'))
+	@test -n "$(TAG)" || { echo "Failed to resolve TAG from cluster" >&2; exit 1; }
 endif
 
 create: ## Provision infrastructure (state bucket + Terraform + GKE creds)
@@ -40,7 +42,13 @@ migrate: _resolve-image ## Run Prisma migration Job
 	cd $(MIGRATION) && kustomize edit set image \
 		migrator=$(REGISTRY)/migrator:$(TAG)
 	kubectl apply -k $(MIGRATION)
-	kubectl -n $(NAMESPACE) wait --for=condition=complete --timeout=120s job/prisma-migrate
+	@# Race complete vs failed — whichever fires first wins
+	@kubectl -n $(NAMESPACE) wait --for=condition=complete --timeout=120s job/prisma-migrate & PID_OK=$$!; \
+	 kubectl -n $(NAMESPACE) wait --for=condition=failed --timeout=120s job/prisma-migrate & PID_FAIL=$$!; \
+	 if wait $$PID_OK 2>/dev/null; then kill $$PID_FAIL 2>/dev/null; wait $$PID_FAIL 2>/dev/null; \
+	 else kill $$PID_OK 2>/dev/null; wait $$PID_OK 2>/dev/null; \
+	   echo "Migration job failed:" >&2; kubectl -n $(NAMESPACE) logs job/prisma-migrate >&2; exit 1; \
+	 fi
 	kubectl -n $(NAMESPACE) logs job/prisma-migrate
 
 rollout-wait: ## Wait for nextjs deployment rollout

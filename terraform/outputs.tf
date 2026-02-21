@@ -13,12 +13,6 @@ output "artifact_registry_url" {
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker.repository_id}"
 }
 
-output "deployer_sa_key" {
-  description = "SA key JSON — automatically pushed to GitHub as the GCP_SA_KEY secret"
-  value       = base64decode(google_service_account_key.deployer_key.private_key)
-  sensitive   = true
-}
-
 output "postgres_password" {
   description = "Auto-generated PostgreSQL password (stored in K8s secret)"
   value       = random_password.postgres.result

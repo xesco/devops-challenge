@@ -14,6 +14,11 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        runAsUser: 70
+        runAsGroup: 70
+        runAsNonRoot: true
+        fsGroup: 70
       containers:
         - name: postgres
           image: postgres:17-alpine
@@ -48,6 +53,10 @@ spec:
                 - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             periodSeconds: 10
             timeoutSeconds: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data

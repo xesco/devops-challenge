@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-git diff --quiet && git diff --cached --quiet \
+git diff --quiet && git diff --cached --quiet && test -z "$(git ls-files --others --exclude-standard)" \
   || { echo "Working tree is dirty. Commit or stash changes first." >&2; exit 1; }
 
 HPA="k8s/base/nextjs/hpa.yaml"
@@ -10,11 +10,11 @@ DEPLOY="k8s/base/nextjs/deployment.yaml"
 # Scale HPA minReplicas 2 -> 4
 sed -i 's/minReplicas: 2/minReplicas: 4/' "$HPA"
 
-# Liveness probe periodSeconds 30 -> 15
-sed -i 's/periodSeconds: 30/periodSeconds: 15/' "$DEPLOY"
+# Liveness probe failureThreshold 3 -> 6
+sed -i '/livenessProbe/,/failureThreshold/{s/failureThreshold: 3/failureThreshold: 6/}' "$DEPLOY"
 
 git add "$HPA" "$DEPLOY"
-git commit -m "CD test (k8s): scale to 4 replicas and tighten liveness probe"
+git diff --cached --quiet || git commit -m "CD test (k8s): scale to 4 replicas and increase liveness failureThreshold"
 git push origin main
 
 REPO_URL=$(gh repo view --json url -q .url)

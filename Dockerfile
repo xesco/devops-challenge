@@ -33,6 +33,12 @@ COPY --from=deps /app/package.json ./
 COPY --from=deps /app/prisma ./prisma
 COPY prisma.config.ts ./
 
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 --ingroup nodejs nextjs && \
+    mkdir -p /app/.cache/corepack && chown nextjs:nodejs /app/.cache/corepack
+ENV COREPACK_HOME=/app/.cache/corepack
+USER nextjs
+
 ENTRYPOINT ["pnpm", "exec", "prisma", "migrate", "deploy"]
 
 

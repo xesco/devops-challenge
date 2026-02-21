@@ -2,7 +2,8 @@ terraform {
   required_version = ">= 1.5"
 
   backend "gcs" {
-    bucket = "moonpay-devops-challenge-tfstate"
+    # Bucket is passed dynamically via: terraform init -backend-config="bucket=..."
+    # See scripts/create.sh
     prefix = "terraform/state"
   }
 
