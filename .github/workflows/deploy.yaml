@@ -84,7 +84,7 @@ jobs:
             .
           docker push ${REGISTRY}/migrator:${{ github.sha }}
 
-  # ── Deploy: app code changed (new image) ─────────────────────────
+  # Deploy: app code changed (new image).
   # Requires manual approval via the "production" GitHub Environment.
   deploy-app:
     needs: [detect-changes, build-and-push]
@@ -116,7 +116,7 @@ jobs:
           make rollout-wait
           make show-ip
 
-  # ── Deploy: k8s manifests only (no new image) ──────────────────
+  # Deploy: k8s manifests only (no new image).
   # No approval needed — reuses the image already running in the cluster.
   deploy-k8s-only:
     needs: [detect-changes, build-and-push]

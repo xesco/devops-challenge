@@ -1,14 +1,14 @@
 # GitHub Actions configuration — environment gate + repository secrets.
 # Authenticates via the GITHUB_TOKEN env var.
 
-# ── Data Sources ─────────────────────────────────────────────────
+# Data sources
 
 data "github_user" "reviewers" {
   for_each = toset(var.github_reviewers)
   username = each.value
 }
 
-# ── Production Environment ───────────────────────────────────────
+# Production environment.
 # Requires manual approval before deploy-app can run.
 
 resource "github_repository_environment" "production" {
@@ -20,7 +20,7 @@ resource "github_repository_environment" "production" {
   }
 }
 
-# ── Repository Secrets ───────────────────────────────────────────
+# Repository secrets.
 # Wires the GCP service account key and project ID into GitHub Actions.
 
 resource "github_actions_secret" "gcp_sa_key" {

@@ -1,57 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ── Colours ──────────────────────────────────────────────────────
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BOLD='\033[1m'
-NC='\033[0m' # No colour
-
-info()  { printf "${BOLD}▸ %s${NC}\n" "$*"; }
-ok()    { printf "${GREEN}✔ %s${NC}\n" "$*"; }
-warn()  { printf "${YELLOW}⚠ %s${NC}\n" "$*"; }
-die()   { printf "${RED}✖ %s${NC}\n" "$*" >&2; exit 1; }
-
-# ── Prerequisites ────────────────────────────────────────────────
-info "Checking prerequisites…"
-
-command -v gcloud    >/dev/null 2>&1 || die "gcloud CLI not found. Install: https://cloud.google.com/sdk/docs/install"
-command -v terraform >/dev/null 2>&1 || die "terraform not found. Install: mise use -g terraform@latest"
-command -v gh        >/dev/null 2>&1 || die "gh CLI not found. Install: mise use -g gh@latest"
-
+# Prerequisites
+command -v gcloud    >/dev/null 2>&1 || { echo "gcloud CLI not found" >&2; exit 1; }
+command -v terraform >/dev/null 2>&1 || { echo "terraform not found" >&2; exit 1; }
+command -v gh        >/dev/null 2>&1 || { echo "gh CLI not found" >&2; exit 1; }
 gcloud auth print-access-token >/dev/null 2>&1 \
-  || die "Not authenticated with gcloud. Run: gcloud auth login"
-
+  || { echo "Not authenticated with gcloud. Run: gcloud auth login" >&2; exit 1; }
 gh auth status >/dev/null 2>&1 \
-  || die "Not authenticated with gh. Run: gh auth login"
-
+  || { echo "Not authenticated with gh. Run: gh auth login" >&2; exit 1; }
 [[ -f terraform/terraform.tfvars ]] \
-  || die "terraform/terraform.tfvars not found. Copy the example:\n  cp terraform/terraform.tfvars.example terraform/terraform.tfvars"
+  || { echo "terraform/terraform.tfvars not found. Run: cp terraform/terraform.tfvars.example terraform/terraform.tfvars" >&2; exit 1; }
 
-ok "All prerequisites met"
-
-# ── Derive project settings ──────────────────────────────────────
+# Project settings
 PROJECT_ID=$(gcloud config get project 2>/dev/null)
-[[ -n "${PROJECT_ID}" ]] || die "No GCP project set. Run: gcloud config set project <PROJECT_ID>"
-
+[[ -n "${PROJECT_ID}" ]] || { echo "No GCP project set. Run: gcloud config set project <PROJECT_ID>" >&2; exit 1; }
 REGION=$(gcloud config get compute/region 2>/dev/null || true)
 REGION="${REGION:-us-central1}"
-
 BUCKET="${PROJECT_ID}-tfstate"
-
 export GITHUB_TOKEN
 GITHUB_TOKEN=$(gh auth token)
 
-info "Project:  ${PROJECT_ID}"
-info "Region:   ${REGION}"
-info "State:    gs://${BUCKET}"
+echo "Project: ${PROJECT_ID}"
+echo "Region:  ${REGION}"
+echo "State:   gs://${BUCKET}"
 
-# ── GCS state bucket ────────────────────────────────────────────
-info "Creating state bucket (idempotent)…"
-
+# State bucket
 if gcloud storage buckets describe "gs://${BUCKET}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
-  warn "Bucket gs://${BUCKET} already exists — skipping creation"
+  echo "Bucket gs://${BUCKET} already exists, skipping creation"
 else
   gcloud storage buckets create "gs://${BUCKET}" \
     --project="${PROJECT_ID}" \
@@ -59,29 +35,17 @@ else
     --uniform-bucket-level-access \
     --public-access-prevention
   gcloud storage buckets update "gs://${BUCKET}" --versioning
-  ok "Bucket gs://${BUCKET} created with versioning"
 fi
 
-# ── Terraform ────────────────────────────────────────────────────
-info "Initialising Terraform…"
+# Terraform
 terraform -chdir=terraform init -backend-config="bucket=${BUCKET}"
-
-info "Applying Terraform (auto-approve)…"
 terraform -chdir=terraform apply -auto-approve
 
-ok "Infrastructure provisioned"
-
-# ── GKE credentials ─────────────────────────────────────────────
-info "Fetching GKE credentials…"
+# GKE credentials
 gcloud container clusters get-credentials devops-challenge \
   --region "${REGION}" \
   --project "${PROJECT_ID}"
 
-ok "kubectl configured for cluster devops-challenge"
-
-# ── Done ─────────────────────────────────────────────────────────
-printf "\n${GREEN}${BOLD}All done!${NC}\n\n"
-printf "Push to ${BOLD}main${NC} to trigger the first deploy:\n"
-printf "  git push origin main\n\n"
-printf "Then approve the deploy in the GitHub UI when prompted.\n"
-printf "Once deployed, run ${BOLD}make show-ip${NC} to get the external IP.\n"
+echo ""
+echo "Done. Push to main to trigger the first deploy:"
+echo "  git push origin main"
