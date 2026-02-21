@@ -10,7 +10,44 @@ env:
   REGISTRY: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/devops-challenge
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+      k8s: ${{ steps.filter.outputs.k8s }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            app:
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'prisma/**'
+              - 'public/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'next.config.ts'
+              - 'tsconfig.json'
+              - 'postcss.config.mjs'
+              - 'prisma.config.ts'
+            k8s:
+              - 'k8s/**'
+              - '.github/workflows/deploy.yaml'
+
   build-and-push:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -47,8 +84,13 @@ jobs:
           docker push ${REGISTRY}/migrator:${{ github.sha }}
 
   deploy:
-    needs: build-and-push
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect-changes, build-and-push]
+    # Run when app or k8s files changed, even if build-and-push was skipped
+    # (k8s-only change). Never run if build-and-push failed.
+    if: >-
+      always()
+      && (needs.detect-changes.outputs.app == 'true' || needs.detect-changes.outputs.k8s == 'true')
+      && needs.build-and-push.result != 'failure'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,14 +110,29 @@ jobs:
           cluster_name: ${{ env.CLUSTER }}
           location: ${{ env.REGION }}
 
+      - name: Resolve image tag
+        id: resolve-tag
+        run: |
+          if [ "${{ needs.detect-changes.outputs.app }}" = "true" ]; then
+            echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "Using freshly built images tagged ${{ github.sha }}"
+          else
+            CURRENT=$(kubectl -n moonpay get deployment nextjs \
+              -o jsonpath='{.spec.template.spec.containers[0].image}')
+            TAG="${CURRENT##*:}"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            echo "Reusing current image tag ${TAG} (k8s-only change)"
+          fi
+
       - name: Set image tags in overlay
         working-directory: k8s/overlays/production
         run: |
           kustomize edit set image \
-            nextjs=${REGISTRY}/nextjs:${{ github.sha }} \
-            migrator=${REGISTRY}/migrator:${{ github.sha }}
+            nextjs=${REGISTRY}/nextjs:${{ steps.resolve-tag.outputs.tag }} \
+            migrator=${REGISTRY}/migrator:${{ steps.resolve-tag.outputs.tag }}
 
       - name: Delete previous migration Job (if exists)
+        if: needs.detect-changes.outputs.app == 'true'
         run: |
           kubectl -n moonpay delete job prisma-migrate --ignore-not-found
 
@@ -83,6 +140,7 @@ jobs:
         run: kubectl apply -k k8s/overlays/production
 
       - name: Wait for migration Job
+        if: needs.detect-changes.outputs.app == 'true'
         run: |
           kubectl -n moonpay wait --for=condition=complete \
             job/prisma-migrate --timeout=120s
