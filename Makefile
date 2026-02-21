@@ -42,13 +42,8 @@ migrate: _resolve-image ## Run Prisma migration Job
 	cd $(MIGRATION) && kustomize edit set image \
 		migrator=$(REGISTRY)/migrator:$(TAG)
 	kubectl apply -k $(MIGRATION)
-	@# Race complete vs failed — whichever fires first wins
-	@kubectl -n $(NAMESPACE) wait --for=condition=complete --timeout=120s job/prisma-migrate & PID_OK=$$!; \
-	 kubectl -n $(NAMESPACE) wait --for=condition=failed --timeout=120s job/prisma-migrate & PID_FAIL=$$!; \
-	 if wait $$PID_OK 2>/dev/null; then kill $$PID_FAIL 2>/dev/null; wait $$PID_FAIL 2>/dev/null; \
-	 else kill $$PID_OK 2>/dev/null; wait $$PID_OK 2>/dev/null; \
-	   echo "Migration job failed:" >&2; kubectl -n $(NAMESPACE) logs job/prisma-migrate >&2; exit 1; \
-	 fi
+	kubectl -n $(NAMESPACE) wait --for=condition=complete --timeout=120s job/prisma-migrate \
+		|| { echo "Migration job failed:" >&2; kubectl -n $(NAMESPACE) logs job/prisma-migrate >&2; exit 1; }
 	kubectl -n $(NAMESPACE) logs job/prisma-migrate
 
 rollout-wait: ## Wait for nextjs deployment rollout
