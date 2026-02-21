@@ -4,6 +4,7 @@ set -euo pipefail
 # Prerequisites
 command -v gcloud    >/dev/null 2>&1 || { echo "gcloud CLI not found" >&2; exit 1; }
 command -v terraform >/dev/null 2>&1 || { echo "terraform not found" >&2; exit 1; }
+command -v kustomize >/dev/null 2>&1 || { echo "kustomize not found. Run: mise use -g kustomize@latest" >&2; exit 1; }
 command -v gh        >/dev/null 2>&1 || { echo "gh CLI not found" >&2; exit 1; }
 gcloud auth print-access-token >/dev/null 2>&1 \
   || { echo "Not authenticated with gcloud. Run: gcloud auth login" >&2; exit 1; }
