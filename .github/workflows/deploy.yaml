@@ -1,0 +1,106 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGION: us-central1
+  CLUSTER: devops-challenge
+  REGISTRY: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/devops-challenge
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+      - name: Build and push nextjs image
+        run: |
+          docker build \
+            --target runner \
+            --tag ${REGISTRY}/nextjs:${{ github.sha }} \
+            .
+          docker push ${REGISTRY}/nextjs:${{ github.sha }}
+
+      - name: Build and push migrator image
+        run: |
+          docker build \
+            --target migrator \
+            --tag ${REGISTRY}/migrator:${{ github.sha }} \
+            .
+          docker push ${REGISTRY}/migrator:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER }}
+          location: ${{ env.REGION }}
+
+      - name: Set image tags in overlay
+        working-directory: k8s/overlays/production
+        run: |
+          kustomize edit set image \
+            nextjs=${REGISTRY}/nextjs:${{ github.sha }} \
+            migrator=${REGISTRY}/migrator:${{ github.sha }}
+
+      - name: Delete previous migration Job (if exists)
+        run: |
+          kubectl -n moonpay delete job prisma-migrate --ignore-not-found
+
+      - name: Apply manifests
+        run: kubectl apply -k k8s/overlays/production
+
+      - name: Wait for migration Job
+        run: |
+          kubectl -n moonpay wait --for=condition=complete \
+            job/prisma-migrate --timeout=120s
+
+      - name: Wait for rollout
+        run: |
+          kubectl -n moonpay rollout status deployment/nextjs --timeout=300s
+
+      - name: Show external IP
+        run: |
+          echo "Waiting for external IP..."
+          for i in $(seq 1 30); do
+            IP=$(kubectl -n moonpay get svc nextjs -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then
+              echo "Application is live at http://${IP}"
+              break
+            fi
+            sleep 10
+          done

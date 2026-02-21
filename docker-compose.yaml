@@ -1,25 +1,33 @@
 services:
   postgres:
     image: postgres:17-alpine
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: currencies
     ports:
       - 5432:5432
     volumes:
       - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d currencies"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   nextjs:
     build: .
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_PRISMA_URL: postgres://postgres:postgres@host.docker.internal:5432/currencies?schema=public
+      # Credentials injected at runtime from .env (git-ignored) or a secrets
+      # manager — never hardcoded in this file.
+      POSTGRES_PRISMA_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/currencies?schema=public
     ports:
       - 3000:3000
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres:
