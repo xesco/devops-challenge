@@ -43,6 +43,7 @@ jobs:
               - 'prisma.config.ts'
             k8s:
               - 'k8s/**'
+              - 'Makefile'
               - '.github/workflows/deploy.yaml'
 
   build-and-push:
@@ -108,48 +109,12 @@ jobs:
           cluster_name: ${{ env.CLUSTER }}
           location: ${{ env.REGION }}
 
-      - name: Set image tag in overlay
-        working-directory: k8s/overlays/production
+      - name: Deploy and migrate
         run: |
-          kustomize edit set image \
-            nextjs=${REGISTRY}/nextjs:${{ github.sha }}
-
-      - name: Apply manifests
-        run: kubectl apply -k k8s/overlays/production
-
-      - name: Set migration image tag
-        working-directory: k8s/overlays/production/migration
-        run: |
-          kustomize edit set image \
-            migrator=${REGISTRY}/migrator:${{ github.sha }}
-
-      - name: Delete previous migration Job (if exists)
-        run: |
-          kubectl -n moonpay delete job prisma-migrate --ignore-not-found
-
-      - name: Apply migration Job
-        run: kubectl apply -k k8s/overlays/production/migration
-
-      - name: Wait for migration Job
-        run: |
-          kubectl -n moonpay wait --for=condition=complete \
-            job/prisma-migrate --timeout=120s
-
-      - name: Wait for rollout
-        run: |
-          kubectl -n moonpay rollout status deployment/nextjs --timeout=300s
-
-      - name: Show external IP
-        run: |
-          echo "Waiting for external IP..."
-          for i in $(seq 1 30); do
-            IP=$(kubectl -n moonpay get svc nextjs -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            if [ -n "$IP" ]; then
-              echo "Application is live at http://${IP}"
-              break
-            fi
-            sleep 10
-          done
+          make deploy REGISTRY=${REGISTRY} TAG=${{ github.sha }}
+          make migrate REGISTRY=${REGISTRY} TAG=${{ github.sha }}
+          make rollout-wait
+          make show-ip
 
   # ── Deploy: k8s manifests only (no new image) ──────────────────
   # No approval needed — reuses the image already running in the cluster.
@@ -179,36 +144,8 @@ jobs:
           cluster_name: ${{ env.CLUSTER }}
           location: ${{ env.REGION }}
 
-      - name: Resolve current image tag
-        id: resolve-tag
+      - name: Deploy (reuse current image)
         run: |
-          CURRENT=$(kubectl -n moonpay get deployment nextjs \
-            -o jsonpath='{.spec.template.spec.containers[0].image}')
-          TAG="${CURRENT##*:}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "Reusing current image tag ${TAG} (k8s-only change)"
-
-      - name: Set image tag in overlay
-        working-directory: k8s/overlays/production
-        run: |
-          kustomize edit set image \
-            nextjs=${REGISTRY}/nextjs:${{ steps.resolve-tag.outputs.tag }}
-
-      - name: Apply manifests
-        run: kubectl apply -k k8s/overlays/production
-
-      - name: Wait for rollout
-        run: |
-          kubectl -n moonpay rollout status deployment/nextjs --timeout=300s
-
-      - name: Show external IP
-        run: |
-          echo "Waiting for external IP..."
-          for i in $(seq 1 30); do
-            IP=$(kubectl -n moonpay get svc nextjs -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            if [ -n "$IP" ]; then
-              echo "Application is live at http://${IP}"
-              break
-            fi
-            sleep 10
-          done
+          make deploy
+          make rollout-wait
+          make show-ip
