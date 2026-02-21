@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+git diff --quiet && git diff --cached --quiet \
+  || { echo "Working tree is dirty. Commit or stash changes first." >&2; exit 1; }
+
 # Create migration
 TIMESTAMP=$(date +%Y%m%d%H%M%S)
 DIR="prisma/migrations/${TIMESTAMP}_cd_test_remove_litecoin"

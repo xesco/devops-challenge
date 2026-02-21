@@ -17,3 +17,11 @@ prisma/generated
 
 # Documentation — not needed in the image
 *.md
+
+# Infrastructure / CI — not needed in the image
+terraform/
+k8s/
+scripts/
+.github/
+Makefile
+docker-compose.yaml

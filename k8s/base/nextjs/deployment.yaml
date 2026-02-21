@@ -72,9 +72,13 @@ spec:
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 30
-            timeoutSeconds: 5
+            timeoutSeconds: 10
+            failureThreshold: 5
           securityContext:
             readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           volumeMounts:
             - name: nextjs-cache
               mountPath: /app/.next/cache

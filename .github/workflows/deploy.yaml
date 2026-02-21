@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGION: us-central1
   CLUSTER: devops-challenge
@@ -109,10 +113,10 @@ jobs:
           cluster_name: ${{ env.CLUSTER }}
           location: ${{ env.REGION }}
 
-      - name: Deploy and migrate
+      - name: Migrate and deploy
         run: |
-          make deploy REGISTRY=${REGISTRY} TAG=${{ github.sha }}
           make migrate REGISTRY=${REGISTRY} TAG=${{ github.sha }}
+          make deploy REGISTRY=${REGISTRY} TAG=${{ github.sha }}
           make rollout-wait
           make show-ip
 

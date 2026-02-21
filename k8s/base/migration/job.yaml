@@ -9,20 +9,32 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
       initContainers:
         - name: wait-for-postgres
           image: postgres:17-alpine
           command: ['sh', '-c', 'until pg_isready -h postgres -p 5432; do sleep 2; done']
+          securityContext:
+            runAsUser: 70
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
-              cpu: 250m
-              memory: 512Mi
+              cpu: 50m
+              memory: 64Mi
             limits:
-              cpu: 250m
-              memory: 512Mi
+              cpu: 50m
+              memory: 64Mi
       containers:
         - name: migrator
           image: migrator:latest # replaced by Kustomize overlay
+          securityContext:
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           env:
             - name: POSTGRES_USER
               valueFrom:

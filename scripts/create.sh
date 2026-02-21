@@ -43,7 +43,8 @@ terraform -chdir=terraform init -backend-config="bucket=${BUCKET}"
 terraform -chdir=terraform apply -auto-approve
 
 # GKE credentials
-gcloud container clusters get-credentials devops-challenge \
+CLUSTER_NAME=$(terraform -chdir=terraform output -raw cluster_name)
+gcloud container clusters get-credentials "$CLUSTER_NAME" \
   --region "${REGION}" \
   --project "${PROJECT_ID}"
 

@@ -2,15 +2,23 @@ NAMESPACE  := moonpay
 OVERLAY    := k8s/overlays/production
 MIGRATION  := $(OVERLAY)/migration
 
-# CI passes these explicitly; locally, derive from the running deployment.
-REGISTRY ?= $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
-    -o jsonpath='{.spec.template.spec.containers[0].image}' | sed 's|/nextjs:.*||')
-TAG      ?= $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
-    -o jsonpath='{.spec.template.spec.containers[0].image}' | grep -o '[^:]*$$')
+# CI passes REGISTRY and TAG explicitly.
+# For local use, _resolve-image derives them from the running deployment.
 
 .DEFAULT_GOAL := help
 .PHONY: create destroy deploy migrate rollout-wait show-ip \
-       cd-test-apply cd-test-revert cd-test-k8s-apply cd-test-k8s-revert help
+       cd-test-apply cd-test-revert cd-test-k8s-apply cd-test-k8s-revert help \
+       _resolve-image
+
+_resolve-image:
+ifndef REGISTRY
+	$(eval REGISTRY := $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
+		-o jsonpath='{.spec.template.spec.containers[0].image}' | sed 's|/nextjs:.*||'))
+endif
+ifndef TAG
+	$(eval TAG := $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
+		-o jsonpath='{.spec.template.spec.containers[0].image}' | grep -o '[^:]*$$'))
+endif
 
 create: ## Provision infrastructure (state bucket + Terraform + GKE creds)
 	@bash scripts/create.sh
@@ -22,16 +30,18 @@ help: ## Show available targets
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  %-22s %s\n", $$1, $$2}'
 
-deploy: ## Set image tag and apply main manifests
+deploy: _resolve-image ## Set image tag and apply main manifests
 	cd $(OVERLAY) && kustomize edit set image \
 		nextjs=$(REGISTRY)/nextjs:$(TAG)
 	kubectl apply -k $(OVERLAY)
 
-migrate: ## Run Prisma migration Job
+migrate: _resolve-image ## Run Prisma migration Job
 	kubectl -n $(NAMESPACE) delete job prisma-migrate --ignore-not-found
 	cd $(MIGRATION) && kustomize edit set image \
 		migrator=$(REGISTRY)/migrator:$(TAG)
 	kubectl apply -k $(MIGRATION)
+	kubectl -n $(NAMESPACE) wait --for=condition=complete --timeout=120s job/prisma-migrate
+	kubectl -n $(NAMESPACE) logs job/prisma-migrate
 
 rollout-wait: ## Wait for nextjs deployment rollout
 	kubectl -n $(NAMESPACE) rollout status deployment/nextjs --timeout=300s
