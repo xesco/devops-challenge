@@ -9,7 +9,7 @@ TAG      ?= $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
     -o jsonpath='{.spec.template.spec.containers[0].image}' | grep -o '[^:]*$$')
 
 .DEFAULT_GOAL := help
-.PHONY: create destroy deploy migrate rollout-wait show-ip help
+.PHONY: create destroy deploy migrate rollout-wait show-ip cd-test-apply cd-test-revert help
 
 create: ## Provision infrastructure (state bucket + Terraform + GKE creds)
 	@bash scripts/create.sh
@@ -31,9 +31,6 @@ migrate: ## Run Prisma migration Job
 	cd $(MIGRATION) && kustomize edit set image \
 		migrator=$(REGISTRY)/migrator:$(TAG)
 	kubectl apply -k $(MIGRATION)
-	kubectl -n $(NAMESPACE) wait --for=condition=complete \
-		job/prisma-migrate --timeout=120s
-	kubectl -n $(NAMESPACE) logs job/prisma-migrate
 
 rollout-wait: ## Wait for nextjs deployment rollout
 	kubectl -n $(NAMESPACE) rollout status deployment/nextjs --timeout=300s
@@ -46,3 +43,9 @@ show-ip: ## Print the external LoadBalancer IP
 	else \
 		echo "External IP not yet assigned"; \
 	fi
+
+cd-test-apply: ## Push a test change (new currency + heading) to trigger CD
+	@bash scripts/cd-test-apply.sh
+
+cd-test-revert: ## Revert the test change and trigger CD
+	@bash scripts/cd-test-revert.sh
