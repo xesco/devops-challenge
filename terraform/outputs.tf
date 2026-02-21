@@ -14,7 +14,7 @@ output "artifact_registry_url" {
 }
 
 output "deployer_sa_key" {
-  description = "SA key JSON — store as GCP_SA_KEY GitHub secret"
+  description = "SA key JSON — automatically pushed to GitHub as the GCP_SA_KEY secret"
   value       = base64decode(google_service_account_key.deployer_key.private_key)
   sensitive   = true
 }

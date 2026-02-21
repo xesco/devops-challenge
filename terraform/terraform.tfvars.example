@@ -1,2 +1,6 @@
 project_id = "moonpay-devops-challenge"
 region     = "us-central1"
+
+github_owner      = "xesco"
+github_repository = "devops-challenge"
+github_reviewers  = ["xesco"]
