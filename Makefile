@@ -8,6 +8,7 @@ REGISTRY ?= $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
 TAG      ?= $(shell kubectl -n $(NAMESPACE) get deployment nextjs \
     -o jsonpath='{.spec.template.spec.containers[0].image}' | grep -o '[^:]*$$')
 
+.DEFAULT_GOAL := help
 .PHONY: create destroy deploy migrate rollout-wait show-ip help
 
 create: ## Provision infrastructure (state bucket + Terraform + GKE creds)
