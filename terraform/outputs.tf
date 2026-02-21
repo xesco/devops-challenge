@@ -18,3 +18,9 @@ output "deployer_sa_key" {
   value       = base64decode(google_service_account_key.deployer_key.private_key)
   sensitive   = true
 }
+
+output "postgres_password" {
+  description = "Auto-generated PostgreSQL password (stored in K8s secret)"
+  value       = random_password.postgres.result
+  sensitive   = true
+}
