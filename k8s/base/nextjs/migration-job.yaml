@@ -9,6 +9,17 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:17-alpine
+          command: ['sh', '-c', 'until pg_isready -h postgres -p 5432; do sleep 2; done']
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 250m
+              memory: 512Mi
       containers:
         - name: migrator
           image: migrator:latest # replaced by Kustomize overlay

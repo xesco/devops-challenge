@@ -3,12 +3,8 @@ kind: Kustomization
 
 namespace: moonpay
 
-commonLabels:
-  project: moonpay-devops-challenge
-
 resources:
   - namespace.yaml
-  - postgres/secret.yaml
   - postgres/statefulset.yaml
   - postgres/service.yaml
   - nextjs/deployment.yaml
