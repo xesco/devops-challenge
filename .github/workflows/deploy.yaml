@@ -82,11 +82,7 @@ jobs:
 
       - name: Migrate
         run: |
-          kubectl -n ${NAMESPACE} rollout status statefulset/postgres --timeout=180s
           kubectl -n ${NAMESPACE} delete job prisma-migrate --ignore-not-found
           cd ${OVERLAY}/migration && kustomize edit set image \
             migrator=${REGISTRY}/migrator:${{ github.sha }}
           kubectl apply -k ${OVERLAY}/migration
-          kubectl -n ${NAMESPACE} wait --for=condition=complete --timeout=120s job/prisma-migrate \
-            || { echo "Migration job failed:" >&2; kubectl -n ${NAMESPACE} logs job/prisma-migrate >&2; exit 1; }
-          kubectl -n ${NAMESPACE} logs job/prisma-migrate
