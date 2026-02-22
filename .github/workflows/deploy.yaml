@@ -12,6 +12,8 @@ env:
   REGION: us-central1
   CLUSTER: devops-challenge
   REGISTRY: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/devops-challenge
+  NAMESPACE: moonpay
+  OVERLAY: k8s/overlays/production
 
 jobs:
   build-and-push:
@@ -74,7 +76,26 @@ jobs:
 
       - name: Deploy
         run: |
-          make deploy  REGISTRY=${REGISTRY} TAG=${{ github.sha }}
-          make migrate REGISTRY=${REGISTRY} TAG=${{ github.sha }}
-          make rollout-wait
-          make show-ip
+          cd ${OVERLAY} && kustomize edit set image \
+            nextjs=${REGISTRY}/nextjs:${{ github.sha }}
+          kubectl apply -k ${OVERLAY}
+
+      - name: Migrate
+        run: |
+          kubectl -n ${NAMESPACE} rollout status statefulset/postgres --timeout=180s
+          kubectl -n ${NAMESPACE} delete job prisma-migrate --ignore-not-found
+          cd ${OVERLAY}/migration && kustomize edit set image \
+            migrator=${REGISTRY}/migrator:${{ github.sha }}
+          kubectl apply -k ${OVERLAY}/migration
+          kubectl -n ${NAMESPACE} wait --for=condition=complete --timeout=120s job/prisma-migrate \
+            || { echo "Migration job failed:" >&2; kubectl -n ${NAMESPACE} logs job/prisma-migrate >&2; exit 1; }
+          kubectl -n ${NAMESPACE} logs job/prisma-migrate
+
+      - name: Rollout wait
+        run: kubectl -n ${NAMESPACE} rollout status deployment/nextjs --timeout=300s
+
+      - name: Show IP
+        run: |
+          IP=$(kubectl -n ${NAMESPACE} get svc nextjs \
+            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+          [ -n "$IP" ] && echo "Application is live at http://$IP" || echo "External IP not yet assigned"
