@@ -76,13 +76,13 @@ jobs:
 
       - name: Deploy
         run: |
-          cd ${OVERLAY} && kustomize edit set image \
-            nextjs=${REGISTRY}/nextjs:${{ github.sha }}
-          kubectl apply -k ${OVERLAY}
+          cd ${OVERLAY}
+          kustomize edit set image nextjs=${REGISTRY}/nextjs:${{ github.sha }}
+          kubectl apply -k .
 
       - name: Migrate
         run: |
           kubectl -n ${NAMESPACE} delete job prisma-migrate --ignore-not-found
-          cd ${OVERLAY}/migration && kustomize edit set image \
-            migrator=${REGISTRY}/migrator:${{ github.sha }}
-          kubectl apply -k ${OVERLAY}/migration
+          cd ${OVERLAY}/migration
+          kustomize edit set image migrator=${REGISTRY}/migrator:${{ github.sha }}
+          kubectl apply -k .
