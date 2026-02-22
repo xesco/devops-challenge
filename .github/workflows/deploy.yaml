@@ -93,9 +93,3 @@ jobs:
 
       - name: Rollout wait
         run: kubectl -n ${NAMESPACE} rollout status deployment/nextjs --timeout=300s
-
-      - name: Show IP
-        run: |
-          IP=$(kubectl -n ${NAMESPACE} get svc nextjs \
-            -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-          [ -n "$IP" ] && echo "Application is live at http://$IP" || echo "External IP not yet assigned"
