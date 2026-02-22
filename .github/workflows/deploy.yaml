@@ -3,6 +3,20 @@ name: Deploy
 on:
   push:
     branches: [main]
+    paths:
+      - "app/**"
+      - "components/**"
+      - "lib/**"
+      - "prisma/**"
+      - "public/**"
+      - "k8s/**"
+      - "Dockerfile"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "prisma.config.ts"
+      - "next.config.ts"
+      - ".github/workflows/**"
 
 concurrency:
   group: deploy-${{ github.ref }}
@@ -16,7 +30,26 @@ env:
   OVERLAY: k8s/overlays/production
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      migrations: ${{ steps.filter.outputs.migrations }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            migrations:
+              - 'prisma/migrations/**'
+
   build-and-push:
+    needs: changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -53,7 +86,7 @@ jobs:
           docker push ${REGISTRY}/migrator:${{ github.sha }}
 
   deploy:
-    needs: build-and-push
+    needs: [changes, build-and-push]
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -81,6 +114,7 @@ jobs:
           kubectl apply -k .
 
       - name: Migrate
+        if: needs.changes.outputs.migrations == 'true'
         run: |
           kubectl -n ${NAMESPACE} delete job prisma-migrate --ignore-not-found
           cd ${OVERLAY}/migration
