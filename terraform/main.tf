@@ -4,6 +4,7 @@ resource "google_project_service" "apis" {
     "container.googleapis.com",
     "artifactregistry.googleapis.com",
     "iam.googleapis.com",
+    "sqladmin.googleapis.com",
   ])
 
   service            = each.value

@@ -14,26 +14,6 @@ spec:
       restartPolicy: Never
       securityContext:
         runAsNonRoot: true
-      initContainers:
-        - name: wait-for-postgres
-          image: postgres:17-alpine
-          command: ['sh', '-c', 'until pg_isready -h postgres -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 2; done']
-          securityContext:
-            runAsUser: 1000
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop: [ALL]
-          env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
       containers:
         - name: migrator
           image: migrator:latest # replaced by Kustomize overlay
@@ -43,23 +23,11 @@ spec:
             capabilities:
               drop: [ALL]
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
             - name: POSTGRES_PRISMA_URL
-              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?schema=public
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-connection
+                  key: POSTGRES_PRISMA_URL
           resources:
             requests:
               cpu: 250m
@@ -67,3 +35,40 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
+          args:
+            - "--structured-logs"
+            - "--port=5432"
+            - "--exit-zero-on-sigterm"
+            - "$(INSTANCE_CONNECTION_NAME)"
+          env:
+            - name: INSTANCE_CONNECTION_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-connection
+                  key: INSTANCE_CONNECTION_NAME
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/cloudsql/credentials.json
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: cloudsql-credentials
+              mountPath: /secrets/cloudsql
+              readOnly: true
+
+      volumes:
+        - name: cloudsql-credentials
+          secret:
+            secretName: cloudsql-credentials

@@ -35,23 +35,11 @@ spec:
           ports:
             - containerPort: 3000
           env:
-            - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_USER
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_PASSWORD
-            - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-credentials
-                  key: POSTGRES_DB
             - name: POSTGRES_PRISMA_URL
-              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres:5432/$(POSTGRES_DB)?schema=public
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-connection
+                  key: POSTGRES_PRISMA_URL
           resources:
             requests:
               cpu: 250m
@@ -89,8 +77,43 @@ spec:
               mountPath: /app/.next/cache
             - name: tmp
               mountPath: /tmp
+
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2
+          args:
+            - "--structured-logs"
+            - "--port=5432"
+            - "$(INSTANCE_CONNECTION_NAME)"
+          env:
+            - name: INSTANCE_CONNECTION_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-connection
+                  key: INSTANCE_CONNECTION_NAME
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /secrets/cloudsql/credentials.json
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: cloudsql-credentials
+              mountPath: /secrets/cloudsql
+              readOnly: true
+
       volumes:
         - name: nextjs-cache
           emptyDir: {}
         - name: tmp
           emptyDir: {}
+        - name: cloudsql-credentials
+          secret:
+            secretName: cloudsql-credentials
