@@ -36,6 +36,7 @@ jobs:
       contents: read
     outputs:
       migrations: ${{ steps.filter.outputs.migrations }}
+      app: ${{ steps.filter.outputs.app }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,9 +48,23 @@ jobs:
           filters: |
             migrations:
               - 'prisma/migrations/**'
+            app:
+              - 'app/**'
+              - 'components/**'
+              - 'lib/**'
+              - 'public/**'
+              - 'prisma/schema.prisma'
+              - 'prisma.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'next.config.ts'
+              - 'Dockerfile'
+              - 'k8s/**'
 
   build-and-push:
     needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -87,6 +102,7 @@ jobs:
 
   deploy:
     needs: [changes, build-and-push]
+    if: always() && !failure() && !cancelled()
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -108,6 +124,7 @@ jobs:
           location: ${{ env.REGION }}
 
       - name: Deploy
+        if: needs.changes.outputs.app == 'true'
         run: |
           cd ${OVERLAY}
           kustomize edit set image nextjs=${REGISTRY}/nextjs:${{ github.sha }}
