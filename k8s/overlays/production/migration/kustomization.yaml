@@ -8,5 +8,5 @@ resources:
 #   kustomize edit set image migrator=REGISTRY/migrator:SHA
 images:
 - name: migrator
-  newName: us-central1-docker.pkg.dev/moonpay-devops-challenge/devops-challenge/migrator
-  newTag: 0aa34b180a71b888f6c85ce251b596c65d87356f
+  newName: migrator
+  newTag: latest

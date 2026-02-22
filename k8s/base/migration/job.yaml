@@ -14,12 +14,23 @@ spec:
       initContainers:
         - name: wait-for-postgres
           image: postgres:17-alpine
-          command: ['sh', '-c', 'until pg_isready -h postgres -p 5432; do sleep 2; done']
+          command: ['sh', '-c', 'until pg_isready -h postgres -p 5432 -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do sleep 2; done']
           securityContext:
             runAsUser: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop: [ALL]
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_USER
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-credentials
+                  key: POSTGRES_DB
       containers:
         - name: migrator
           image: migrator:latest # replaced by Kustomize overlay
