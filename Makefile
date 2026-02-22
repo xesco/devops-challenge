@@ -1,7 +1,7 @@
 NAMESPACE  := moonpay
 
 .DEFAULT_GOAL := help
-.PHONY: create destroy show-ip cd-test-apply cd-test-revert cd-test-k8s-apply cd-test-k8s-revert help
+.PHONY: create destroy show-ip migrate cd-test-apply cd-test-revert cd-test-k8s-apply cd-test-k8s-revert help
 
 create: ## Provision infrastructure (state bucket + Terraform + GKE creds)
 	@bash scripts/create.sh
@@ -17,6 +17,9 @@ show-ip: ## Print the external LoadBalancer IP
 	@kubectl -n $(NAMESPACE) get svc nextjs \
 		-o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 	@echo
+
+migrate: ## Run the migration Job (latest migrator image, or SHA=<sha> to pin)
+	@bash scripts/migrate.sh $(if $(SHA),$(SHA),)
 
 cd-test-apply: ## Push a test change (new currency + heading) to trigger CD
 	@bash scripts/cd-test-apply.sh
