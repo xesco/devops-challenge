@@ -18,7 +18,7 @@ ON CONFLICT ("code") DO NOTHING;
 SQL
 
 # Mark heading (idempotent - skip if already tagged)
-grep -q '(CD Test)' app/page.tsx || sed -i 's/LatestPrices/LatestPrices (CD Test)/' app/page.tsx
+grep -q '(CD Test)' app/page.tsx || { sed -i.bak 's/LatestPrices/LatestPrices (CD Test)/' app/page.tsx && rm app/page.tsx.bak; }
 
 # Commit and push
 git add prisma/migrations/ app/page.tsx

@@ -8,10 +8,10 @@ HPA="k8s/base/nextjs/hpa.yaml"
 DEPLOY="k8s/base/nextjs/deployment.yaml"
 
 # Scale HPA minReplicas 2 -> 4
-sed -i 's/minReplicas: 2/minReplicas: 4/' "$HPA"
+sed -i.bak 's/minReplicas: 2/minReplicas: 4/' "$HPA" && rm "${HPA}.bak"
 
 # Liveness probe failureThreshold 3 -> 6
-sed -i '/livenessProbe/,/failureThreshold/{s/failureThreshold: 3/failureThreshold: 6/}' "$DEPLOY"
+sed -i.bak '/livenessProbe/,/failureThreshold/{s/failureThreshold: 3/failureThreshold: 6/}' "$DEPLOY" && rm "${DEPLOY}.bak"
 
 git add "$HPA" "$DEPLOY"
 git diff --cached --quiet || git commit -m "CD test (k8s): scale to 4 replicas and increase liveness failureThreshold"

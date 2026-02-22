@@ -8,10 +8,10 @@ HPA="k8s/base/nextjs/hpa.yaml"
 DEPLOY="k8s/base/nextjs/deployment.yaml"
 
 # Revert HPA minReplicas 4 -> 2
-sed -i 's/minReplicas: 4/minReplicas: 2/' "$HPA"
+sed -i.bak 's/minReplicas: 4/minReplicas: 2/' "$HPA" && rm "${HPA}.bak"
 
 # Revert liveness probe failureThreshold 6 -> 3
-sed -i '/livenessProbe/,/failureThreshold/{s/failureThreshold: 6/failureThreshold: 3/}' "$DEPLOY"
+sed -i.bak '/livenessProbe/,/failureThreshold/{s/failureThreshold: 6/failureThreshold: 3/}' "$DEPLOY" && rm "${DEPLOY}.bak"
 
 git add "$HPA" "$DEPLOY"
 git diff --cached --quiet || git commit -m "CD test (k8s): revert replicas and liveness failureThreshold"

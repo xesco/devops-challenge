@@ -14,7 +14,7 @@ DELETE FROM "currencies" WHERE "code" = 'ltc';
 SQL
 
 # Revert heading
-sed -i 's/LatestPrices (CD Test)/LatestPrices/' app/page.tsx
+sed -i.bak 's/LatestPrices (CD Test)/LatestPrices/' app/page.tsx && rm app/page.tsx.bak
 
 # Commit and push
 git add prisma/migrations/ app/page.tsx
