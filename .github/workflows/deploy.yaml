@@ -16,6 +16,7 @@ on:
       - "next.config.ts"
       - "Dockerfile"
       - "k8s/**"
+      - ".github/workflows/**"
 
 concurrency:
   group: deploy-${{ github.ref }}
