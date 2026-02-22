@@ -4,6 +4,12 @@ on:
   push:
     branches: [main]
 
+env:
+  REGION: us-central1
+  REGISTRY: us-central1-docker.pkg.dev
+  GAR_REPO: devops-challenge
+  NAMESPACE: moonpay
+
 permissions:
   contents: write
   issues: write
@@ -11,7 +17,11 @@ permissions:
 
 jobs:
   release:
+    name: Cut release
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      released: ${{ steps.release.outputs.released }}
 
     steps:
       - uses: actions/checkout@v4
@@ -40,6 +50,129 @@ jobs:
           git remote set-url origin "https://x-access-token:${{ secrets.GH_PAT }}@github.com/xesco/devops-challenge.git"
 
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: npx semantic-release
+        run: |
+          OUTPUT=$(npx semantic-release 2>&1)
+          echo "$OUTPUT"
+          VERSION=$(echo "$OUTPUT" | grep -oP 'Published GitHub release.*v\K[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+          if [ -n "$VERSION" ]; then
+            echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "released=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Build & push images
+    runs-on: ubuntu-latest
+    needs: release
+    if: needs.release.outputs.released == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.version }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+
+      - name: Build and push app image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:${{ needs.release.outputs.version }}"
+          docker build --target runner -t "${IMAGE}" .
+          docker push "${IMAGE}"
+
+      - name: Build and push migrator image
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:migrator-${{ needs.release.outputs.version }}"
+          docker build --target migrator -t "${IMAGE}" .
+          docker push "${IMAGE}"
+
+  migrate:
+    name: Run migrations
+    runs-on: ubuntu-latest
+    needs: [release, build]
+    if: needs.release.outputs.released == 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.version }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: devops-challenge
+          location: ${{ env.REGION }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set migrator image tag
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:migrator-${{ needs.release.outputs.version }}"
+          cd k8s/overlays/production/migration
+          kustomize edit set image migrator="${IMAGE}"
+
+      - name: Delete previous migration Job if present
+        run: |
+          kubectl delete job prisma-migrate -n ${{ env.NAMESPACE }} --ignore-not-found
+
+      - name: Apply migration Job
+        run: kubectl apply -k k8s/overlays/production/migration
+
+      - name: Wait for migration to complete
+        run: |
+          kubectl wait job/prisma-migrate \
+            -n ${{ env.NAMESPACE }} \
+            --for=condition=complete \
+            --timeout=120s
+
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    needs: [release, migrate]
+    if: needs.release.outputs.released == 'true'
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.version }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: devops-challenge
+          location: ${{ env.REGION }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Set app image tag
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:${{ needs.release.outputs.version }}"
+          cd k8s/overlays/production
+          kustomize edit set image nextjs="${IMAGE}"
+
+      - name: Apply manifests
+        run: kubectl apply -k k8s/overlays/production
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/nextjs \
+            -n ${{ env.NAMESPACE }} \
+            --timeout=120s
