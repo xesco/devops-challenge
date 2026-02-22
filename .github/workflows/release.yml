@@ -143,7 +143,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: [release, migrate]
     if: needs.release.outputs.released == 'true'
-    environment: production
 
     steps:
       - uses: actions/checkout@v4
