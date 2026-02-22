@@ -38,6 +38,7 @@ deploy: _resolve-image ## Set image tag and apply main manifests
 	kubectl apply -k $(OVERLAY)
 
 migrate: _resolve-image ## Run Prisma migration Job
+	kubectl -n $(NAMESPACE) rollout status statefulset/postgres --timeout=180s
 	kubectl -n $(NAMESPACE) delete job prisma-migrate --ignore-not-found
 	cd $(MIGRATION) && kustomize edit set image \
 		migrator=$(REGISTRY)/migrator:$(TAG)

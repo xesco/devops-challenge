@@ -115,8 +115,8 @@ jobs:
 
       - name: Migrate and deploy
         run: |
+          make deploy  REGISTRY=${REGISTRY} TAG=${{ github.sha }}
           make migrate REGISTRY=${REGISTRY} TAG=${{ github.sha }}
-          make deploy REGISTRY=${REGISTRY} TAG=${{ github.sha }}
           make rollout-wait
           make show-ip
 
