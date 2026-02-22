@@ -10,6 +10,7 @@ resources:
   - nextjs/service.yaml
   - nextjs/hpa.yaml
   - nextjs/pdb.yaml
+  - network-policy.yaml
   # namespace is managed by Terraform (kubernetes.tf).
   # migration-job.yaml is managed by k8s/base/migration/ and applied
   # conditionally by CI/CD - only when application code changes.

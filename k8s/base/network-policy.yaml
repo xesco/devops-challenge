@@ -1,0 +1,36 @@
+# Deny all ingress to postgres by default
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-postgres-ingress
+  namespace: moonpay
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+---
+# Allow ingress to postgres port 5432 from nextjs and migrator only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-clients
+  namespace: moonpay
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: nextjs
+        - podSelector:
+            matchLabels:
+              app: prisma-migrate
+      ports:
+        - protocol: TCP
+          port: 5432
