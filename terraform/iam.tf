@@ -20,13 +20,6 @@ resource "google_project_iam_member" "deployer_gke_developer" {
   member  = "serviceAccount:${google_service_account.deployer.email}"
 }
 
-# Read cluster metadata (required for get-gke-credentials)
-resource "google_project_iam_member" "deployer_gke_cluster_viewer" {
-  project = var.project_id
-  role    = "roles/container.clusterViewer"
-  member  = "serviceAccount:${google_service_account.deployer.email}"
-}
-
 # SA key for GitHub Actions - key material lives in local state
 # Production should use Workload Identity Federation instead
 resource "google_service_account_key" "deployer_key" {
