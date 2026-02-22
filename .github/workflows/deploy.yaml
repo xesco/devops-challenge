@@ -14,45 +14,7 @@ env:
   REGISTRY: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/devops-challenge
 
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    outputs:
-      app: ${{ steps.filter.outputs.app }}
-      k8s: ${{ steps.filter.outputs.k8s }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Detect changed paths
-        id: filter
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            app:
-              - 'app/**'
-              - 'components/**'
-              - 'lib/**'
-              - 'prisma/**'
-              - 'public/**'
-              - 'package.json'
-              - 'pnpm-lock.yaml'
-              - 'pnpm-workspace.yaml'
-              - 'Dockerfile'
-              - '.dockerignore'
-              - 'next.config.ts'
-              - 'tsconfig.json'
-              - 'postcss.config.mjs'
-              - 'prisma.config.ts'
-            k8s:
-              - 'k8s/**'
-              - 'Makefile'
-              - '.github/workflows/deploy.yaml'
-
   build-and-push:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,11 +50,8 @@ jobs:
             .
           docker push ${REGISTRY}/migrator:${{ github.sha }}
 
-  # Deploy: app code changed (new image).
-  # Requires manual approval via the "production" GitHub Environment.
-  deploy-app:
-    needs: [detect-changes, build-and-push]
-    if: needs.detect-changes.outputs.app == 'true'
+  deploy:
+    needs: build-and-push
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -113,43 +72,9 @@ jobs:
           cluster_name: ${{ env.CLUSTER }}
           location: ${{ env.REGION }}
 
-      - name: Migrate and deploy
+      - name: Deploy
         run: |
           make deploy  REGISTRY=${REGISTRY} TAG=${{ github.sha }}
           make migrate REGISTRY=${REGISTRY} TAG=${{ github.sha }}
-          make rollout-wait
-          make show-ip
-
-  # Deploy: k8s manifests only (no new image).
-  # No approval needed - reuses the image already running in the cluster.
-  deploy-k8s-only:
-    needs: [detect-changes, build-and-push]
-    if: >-
-      always()
-      && needs.detect-changes.outputs.app != 'true'
-      && needs.detect-changes.outputs.k8s == 'true'
-      && needs.build-and-push.result != 'failure'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
-
-      - name: Get GKE credentials
-        uses: google-github-actions/get-gke-credentials@v2
-        with:
-          cluster_name: ${{ env.CLUSTER }}
-          location: ${{ env.REGION }}
-
-      - name: Deploy (reuse current image)
-        run: |
-          make deploy
           make rollout-wait
           make show-ip
