@@ -2,7 +2,7 @@
   "name": "devops-challenge",
   "repository": "https://github.com/moonpay/devops-challenge.git",
   "license": "MIT",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "packageManager": "pnpm@10.30.1",
