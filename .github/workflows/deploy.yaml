@@ -90,6 +90,3 @@ jobs:
           kubectl -n ${NAMESPACE} wait --for=condition=complete --timeout=120s job/prisma-migrate \
             || { echo "Migration job failed:" >&2; kubectl -n ${NAMESPACE} logs job/prisma-migrate >&2; exit 1; }
           kubectl -n ${NAMESPACE} logs job/prisma-migrate
-
-      - name: Rollout wait
-        run: kubectl -n ${NAMESPACE} rollout status deployment/nextjs --timeout=300s
