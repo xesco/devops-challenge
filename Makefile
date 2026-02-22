@@ -24,8 +24,8 @@ cd-test-apply: ## Push a test change (new currency + heading) to trigger CD
 cd-test-revert: ## Revert the test change and trigger CD
 	@bash scripts/cd-test-revert.sh
 
-cd-test-k8s-apply: ## Push a k8s-only change (scale + probe), no approval
+cd-test-k8s-apply: ## Push a k8s-only change (scale + probe) to trigger CD
 	@bash scripts/cd-test-k8s-apply.sh
 
-cd-test-k8s-revert: ## Revert the k8s-only change, no approval
+cd-test-k8s-revert: ## Revert the k8s-only change and trigger CD
 	@bash scripts/cd-test-k8s-revert.sh

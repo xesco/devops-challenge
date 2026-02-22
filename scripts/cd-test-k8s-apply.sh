@@ -19,7 +19,7 @@ git push origin main
 
 REPO_URL=$(gh repo view --json url -q .url)
 echo ""
-echo "Pushed. No approval needed - deploys automatically."
+echo "Pushed. Approve the deploy at:"
 echo "  ${REPO_URL}/actions"
 echo ""
 echo "Verify with:"
