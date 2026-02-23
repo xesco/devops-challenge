@@ -11,7 +11,7 @@ into `docker-compose.yaml` so `docker compose up` starts both services.
 
 | File                    | Action | Summary                                                     |
 |-------------------------|--------|-------------------------------------------------------------|
-| `Dockerfile`            | Create | Multi-stage build (deps -> migrator / builder -> runner)    |
+| `Dockerfile`            | Create | Multi-stage build (deps -> builder / migrator -> runner)    |
 | `next.config.ts`        | Modify | Add `output: "standalone"`                                  |
 | `docker-compose.yaml`   | Modify | Fix DB hostname; healthcheck; externalize secrets; restart  |
 | `.dockerignore`         | Modify | Exclude generated files, docs, `.env*` variants             |
@@ -42,6 +42,12 @@ requires the full `node_modules` tree.
 
 Four stages keep the final image minimal and separate concerns.
 
+```
+deps --> builder --> runner
+  |
+  └--> migrator
+```
+
 ### Stage 1 - `deps` (`node:22-alpine`)
 
 - `package.json` is copied first so `corepack prepare --activate` can read the
@@ -56,7 +62,22 @@ Four stages keep the final image minimal and separate concerns.
 Separating dependency installation means Docker caches `node_modules`
 independently. Source-only changes skip `pnpm install` entirely.
 
-### Stage 2a - `migrator` (`node:22-alpine`)
+### Stage 2a - `builder` (`node:22-alpine`)
+
+- Copies `node_modules/` and `prisma/generated/` from `deps`, then copies
+  application source (`.dockerignore` excludes docs, infra, secrets, and
+  generated files).
+- Runs `node_modules/.bin/next build` directly — same as `pnpm build` which
+  just invokes `next build` anyway, but without needing pnpm or corepack in
+  this stage.
+- Sets `NEXT_TELEMETRY_DISABLED=1` to suppress anonymous telemetry during build
+  (avoids outbound network calls, keeps output clean).
+
+No `POSTGRES_PRISMA_URL` needed at build time - `app/page.tsx` sets
+`export const dynamic = "force-dynamic"`, deferring all DB access to request
+time.
+
+### Stage 2b - `migrator` (`node:22-alpine`)
 
 - Branches off `deps` - carries Prisma CLI, migration SQL, and
   `prisma.config.ts`, but no application code.
@@ -70,20 +91,6 @@ independently. Source-only changes skip `pnpm install` entirely.
 
 A Job runs once per deploy. An init container would run once per pod - multiple
 replicas means concurrent migration attempts (wasteful, potential race).
-
-### Stage 2b - `builder` (`node:22-alpine`)
-
-- Copies `node_modules/` and `prisma/generated/` from `deps`, then copies
-  application source (including `package.json`).
-- Runs `node_modules/.bin/next build` directly — same as `pnpm build` which
-  just invokes `next build` anyway, but without needing pnpm or corepack in
-  this stage.
-- Sets `NEXT_TELEMETRY_DISABLED=1` to suppress anonymous telemetry during build
-  (avoids outbound network calls, keeps output clean).
-
-No `POSTGRES_PRISMA_URL` needed at build time - `app/page.tsx` sets
-`export const dynamic = "force-dynamic"`, deferring all DB access to request
-time.
 
 ### Stage 3 - `runner` (`node:22-alpine`)
 

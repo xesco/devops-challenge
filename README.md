@@ -68,8 +68,12 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 │   ├── generated/        # Generated Prisma client (gitignored)
 │   └── migrations/       # SQL migrations
 ├── prisma.config.ts      # Prisma configuration
+├── k8s/                  # Kubernetes manifests (Kustomize base + production overlay)
+├── terraform/            # GCP infrastructure (GKE, Cloud SQL, Artifact Registry, IAM)
+├── scripts/              # Lifecycle scripts (create, destroy, migrate, cd-test-*)
+├── .github/workflows/    # CI/CD (semantic versioning + build + migrate + deploy)
 ├── docker-compose.yaml   # PostgreSQL + Next.js services
-└── Dockerfile            # Production container (you need to create this)
+└── Dockerfile            # Production container (multi-stage build)
 ```
 
 ## Environment Variables

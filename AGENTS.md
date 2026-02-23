@@ -7,9 +7,10 @@ Guidance for AI coding agents working in this repository.
 ## Project Overview
 
 A **Next.js 16 App Router** application that displays live cryptocurrency prices
-from a **PostgreSQL 17** database via **Prisma 7** ORM. The primary open task is
-writing the `Dockerfile` for the `nextjs` service referenced in
-`docker-compose.yaml` (`build: .`).
+from a **PostgreSQL 17** database via **Prisma 7** ORM. Both challenge tasks
+(containerization and deployment) are complete. The app is containerized via a
+multi-stage `Dockerfile` and deployed to GKE Autopilot with Cloud SQL, automated
+via GitHub Actions CI/CD.
 
 **Stack:**
 
@@ -193,9 +194,8 @@ The current codebase has no explicit error handling. When adding new features:
 - The Prisma client is a **global singleton** in `lib/prisma.ts` to survive
   Next.js hot reloads in development.
 - `POSTGRES_PRISMA_URL` is the only required runtime environment variable.
-- The `docker-compose.yaml` wires the `nextjs` service to
-  `host.docker.internal:5432` — use `postgres` as the hostname when both
-  containers are on the same Docker network instead.
+- The `docker-compose.yaml` wires the `nextjs` service to `postgres:5432`
+  via Docker's internal DNS. Both containers share the same Compose network.
 - There is no `.prettierrc`; if you add one, document it here and update
   the formatting section above.
 - There are no Cursor rules, Copilot instructions, or other agent config files

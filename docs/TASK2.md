@@ -164,6 +164,13 @@ a single-environment project.
 A single workflow (`release.yml`) handles the full release and deploy lifecycle
 on every push to `main`.
 
+**Concurrency control:** The workflow uses a `concurrency` group
+(`release-${{ github.ref }}`) with `cancel-in-progress: false`. Multiple pushes
+to `main` are queued and run sequentially — each release completes fully
+(release → build → migrate → deploy) before the next one starts. This prevents
+race conditions in semantic-release tag creation, migration Job conflicts, and
+out-of-order deployments.
+
 **`release.yml`** uses [semantic-release](https://semantic-release.gitbook.io/)
 to analyze commit messages (Conventional Commits). A `feat:` commit bumps the
 minor version, a `fix:` bumps the patch, `BREAKING CHANGE:` bumps major,
@@ -206,6 +213,15 @@ Registry; override with `make migrate SHA=<sha>`.
 Prisma migration (insert/delete test currency), change heading, commit, push.
 Pipeline builds new images, runs migrations, and deploys automatically — no
 approval required. All cd-test scripts check for dirty working tree first.
+
+All four `cd-test-*` targets accept `ARGS=-d` (or `ARGS=--dry-run`) to preview
+changes without committing or pushing. Dry run applies changes temporarily,
+shows `git diff --cached`, then reverts everything:
+
+```bash
+make cd-test-apply ARGS=-d       # preview changes
+make cd-test-apply               # commit and push (triggers CD)
+```
 
 ---
 

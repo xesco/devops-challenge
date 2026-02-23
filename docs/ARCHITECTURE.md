@@ -34,7 +34,7 @@ Next.js renders HTML + streams it back to the browser
 
 Both services are defined in `docker-compose.yaml`. PostgreSQL uses a pre-built
 image from Docker Hub. The `nextjs` service is built from the project root
-`Dockerfile` - a four-stage build (`deps -> migrator / builder -> runner`) that
+`Dockerfile` - a four-stage build (`deps -> builder / migrator -> runner`) that
 produces a minimal Alpine-based production image.
 
 For local development without Docker, Next.js runs via `pnpm dev` and connects
@@ -199,12 +199,13 @@ devops-challenge/
 │       └── release.yml         # Semantic versioning + build + migrate + deploy (fully automated)
 |
 ├── scripts/                    # Lifecycle scripts (create, destroy, migrate, cd-test-*)
+├── Makefile                    # Infra lifecycle + CD testing (make create, make destroy, make cd-test-*)
 ├── .releaserc.json             # semantic-release plugin configuration
 ├── CONTRIBUTING.md             # Conventional commits guide
 ├── prisma.config.ts            # Prisma CLI configuration
 ├── public/                     # Static files served as-is (SVG logos)
 ├── docker-compose.yaml         # postgres + nextjs services
-├── Dockerfile                  # Four-stage build (deps -> migrator / builder -> runner)
+├── Dockerfile                  # Four-stage build (deps -> builder / migrator -> runner)
 ├── .env.example                # Template for required env vars
 ├── package.json                # Dependencies and scripts
 ├── tsconfig.json               # TypeScript configuration

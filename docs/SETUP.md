@@ -249,6 +249,9 @@ automatically:
 
 `chore:` commits (e.g. config tweaks) never trigger a release or deploy.
 
+Multiple pushes to `main` are serialized via a concurrency group — each
+pipeline completes fully before the next starts.
+
 To run a migration manually (e.g. after a fresh Cloud SQL instance):
 
 ```bash
@@ -283,7 +286,8 @@ To exercise the full pipeline end-to-end, use a `feat:` commit to trigger a
 release and deploy:
 
 ```bash
-make cd-test-apply      # Adds Litecoin currency + marks heading "(CD Test)"
+make cd-test-apply ARGS=-d  # Preview changes (dry run, no commit/push)
+make cd-test-apply           # Adds Litecoin currency + marks heading "(CD Test)"
 ```
 
 This commits with `feat: CD test: add Litecoin and mark heading` and pushes to
@@ -291,7 +295,8 @@ This commits with `feat: CD test: add Litecoin and mark heading` and pushes to
 and deploys — all automatically.
 
 ```bash
-make cd-test-revert     # Removes Litecoin + reverts heading
+make cd-test-revert ARGS=-d # Preview revert (dry run)
+make cd-test-revert         # Removes Litecoin + reverts heading
 ```
 
 Same flow. App returns to original state (3 currencies) with no manual steps.
