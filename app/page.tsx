@@ -13,7 +13,7 @@ export default async function Home() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center">
       <h1 className="py-4 bg-linear-to-br from-black via-cosmos to-moonpay bg-clip-text text-center font-bold tracking-tight text-transparent text-6xl md:text-7xl inline-block">
-        LatestPrices
+        LatestPrices (CD Test)
       </h1>
       <Suspense fallback={<TablePlaceholder />}>
         <Table currencies={currencies} />
