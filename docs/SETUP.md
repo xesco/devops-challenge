@@ -87,6 +87,12 @@ Required for Task 2. Skip if you only need local development.
 
 ### 9. Install gcloud CLI
 
+**macOS (Homebrew):**
+
+```bash
+brew install --cask google-cloud-sdk
+```
+
 **ARM64 (Raspberry Pi):**
 
 ```bash
@@ -130,7 +136,9 @@ mise use -g kustomize@latest
 gcloud auth login
 ```
 
-### 13. Create a GCP project
+### 13. Create or select a GCP project
+
+**New project:**
 
 ```bash
 gcloud projects create <PROJECT_ID> --name="<Display Name>"
@@ -138,6 +146,13 @@ gcloud config set project <PROJECT_ID>
 ```
 
 Project ID must be globally unique, 6-30 chars, lowercase + digits + hyphens.
+
+**Existing project:**
+
+```bash
+gcloud projects list
+gcloud config set project <PROJECT_ID>
+```
 
 ### 14. Link billing
 
