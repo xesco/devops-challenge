@@ -27,7 +27,6 @@ reachable from the internet, serving live cryptocurrency prices.
 | `k8s/app/deployment.yaml`                    | Create | App with probes, rolling update, security, Cloud SQL Auth Proxy sidecar |
 | `k8s/app/service.yaml`                       | Create | LoadBalancer for external access           |
 | `k8s/app/hpa.yaml`                           | Create | Horizontal pod autoscaler                  |
-| `k8s/app/pdb.yaml`                           | Create | PodDisruptionBudget (minAvailable: 1)      |
 | `k8s/migration/job.yaml`                     | Create | Prisma migration Job with Cloud SQL Auth Proxy sidecar |
 | `k8s/migration/kustomization.yaml`           | Create | Resource list, namespace, and image tag transformer (migrator) |
 | `.github/workflows/release.yml`              | Create | Full pipeline: semantic versioning + build + migrate + deploy, all triggered on push to main |

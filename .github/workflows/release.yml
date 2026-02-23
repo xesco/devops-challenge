@@ -1,5 +1,8 @@
 name: Release
 
+# Production hardening TODO:
+# - Enable branch protection rules (require PR reviews, status checks, linear history)
+# - Add tag protection rules to prevent manual v* tag pushes
 on:
   push:
     branches: [main]
@@ -28,6 +31,7 @@ jobs:
       released: ${{ steps.release.outputs.released }}
 
     steps:
+      # GH_PAT: manually-created PAT - GITHUB_TOKEN can't be used because its pushes don't trigger workflows
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -78,6 +82,7 @@ jobs:
         with:
           ref: ${{ needs.release.outputs.version }}
 
+      # GCP_SA_KEY: GCP service account key provisioned by Terraform (AR writer + GKE developer)
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
         with:

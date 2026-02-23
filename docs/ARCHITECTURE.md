@@ -189,7 +189,7 @@ devops-challenge/
 │   └── generated/              # Auto-generated TypeScript client (gitignored)
 |
 ├── k8s/
-│   ├── app/                    # K8s manifests for the app (deployment, service, hpa, pdb)
+│   ├── app/                    # K8s manifests for the app (deployment, service, hpa)
 │   └── migration/              # K8s manifests for the Prisma migration Job
 |
 ├── terraform/                  # GKE, Cloud SQL, Artifact Registry, IAM, GitHub env + secrets

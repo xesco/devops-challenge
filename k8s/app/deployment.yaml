@@ -22,13 +22,6 @@ spec:
         runAsUser: 1001
         runAsNonRoot: true
         fsGroup: 1001
-      topologySpreadConstraints:
-        - maxSkew: 1
-          topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: ScheduleAnyway
-          labelSelector:
-            matchLabels:
-              app: nextjs
       containers:
         - name: nextjs
           image: nextjs:latest # replaced by Kustomize overlay
