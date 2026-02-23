@@ -58,10 +58,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          OUTPUT=$(npx semantic-release 2>&1)
-          echo "$OUTPUT"
-          VERSION=$(echo "$OUTPUT" | grep -oP 'Published GitHub release.*v\K[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
-          if [ -n "$VERSION" ]; then
+          npx semantic-release
+          if [ -f .release-version ]; then
+            VERSION=$(cat .release-version)
             echo "version=v${VERSION}" >> "$GITHUB_OUTPUT"
             echo "released=true" >> "$GITHUB_OUTPUT"
           else
