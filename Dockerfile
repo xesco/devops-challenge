@@ -17,7 +17,26 @@ COPY prisma ./prisma
 RUN pnpm install --frozen-lockfile
 
 
-# Stage 2a: migration image - Prisma CLI + migration SQL, no application code
+# Stage 2a: build the application
+# No DB connection needed - `export const dynamic = "force-dynamic"` defers all queries to request time
+FROM node:22.22-alpine AS builder
+WORKDIR /app
+
+# Suppress Next.js anonymous build telemetry
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Bring in installed dependencies and generated Prisma client from deps
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma/generated ./prisma/generated
+
+# Copy application source (.dockerignore excludes docs, infra, secrets, and generated files)
+COPY . .
+
+# output: "standalone" emits a self-contained server bundle under .next/standalone/
+RUN node_modules/.bin/next build
+
+
+# Stage 2b: migration image - Prisma CLI + migration SQL, no application code
 # Used exclusively by the Kubernetes migration Job
 FROM node:22.22-alpine AS migrator
 WORKDIR /app
@@ -30,25 +49,6 @@ COPY prisma.config.ts ./
 # Drop to built-in non-root user
 USER node
 ENTRYPOINT ["node_modules/.bin/prisma", "migrate", "deploy"]
-
-
-# Stage 2b: build the application
-# No DB connection needed - `export const dynamic = "force-dynamic"` defers all queries to request time
-FROM node:22.22-alpine AS builder
-WORKDIR /app
-
-# Suppress Next.js anonymous build telemetry
-ENV NEXT_TELEMETRY_DISABLED=1
-
-# Bring in installed dependencies and generated Prisma client from deps
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/prisma/generated ./prisma/generated
-
-# Copy application source (includes package.json with packageManager field)
-COPY . .
-
-# output: "standalone" emits a self-contained server bundle under .next/standalone/
-RUN node_modules/.bin/next build
 
 
 # Stage 3: minimal production image with standalone server bundle, static assets, and Node runtime
