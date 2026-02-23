@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+DRY_RUN=false
+[[ "${1:-}" == "-d" || "${1:-}" == "--dry-run" ]] && DRY_RUN=true
+
 git diff --quiet && git diff --cached --quiet \
   || { echo "Working tree is dirty. Commit or stash changes first." >&2; exit 1; }
 
@@ -20,8 +23,23 @@ SQL
 # Mark heading (idempotent - skip if already tagged)
 grep -q '(CD Test)' app/page.tsx || { sed -i.bak 's/LatestPrices/LatestPrices (CD Test)/' app/page.tsx && rm app/page.tsx.bak; }
 
-# Commit and push
+# Stage and show diff
 git add prisma/migrations/ app/page.tsx
+
+if $DRY_RUN; then
+  echo "[dry-run] Changes that would be committed:"
+  echo ""
+  git diff --cached
+  echo ""
+  echo "[dry-run] Commit message: feat: CD test: add Litecoin and mark heading"
+  # Revert all changes
+  git reset HEAD -- . >/dev/null
+  git checkout -- . 2>/dev/null
+  rm -rf "$DIR"
+  exit 0
+fi
+
+# Commit and push
 git diff --cached --quiet || git commit -m "feat: CD test: add Litecoin and mark heading"
 git pull --rebase origin main
 git push origin main

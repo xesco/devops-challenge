@@ -22,13 +22,13 @@ migrate: ## Run the migration Job (latest migrator image, or SHA=<sha> to pin)
 	@bash scripts/migrate.sh $(if $(SHA),$(SHA),)
 
 cd-test-apply: ## Push a test change (new currency + heading) to trigger CD
-	@bash scripts/cd-test-apply.sh
+	@bash scripts/cd-test-apply.sh $(ARGS)
 
 cd-test-revert: ## Revert the test change and trigger CD
-	@bash scripts/cd-test-revert.sh
+	@bash scripts/cd-test-revert.sh $(ARGS)
 
 cd-test-k8s-apply: ## Push a k8s-only change (scale + probe) to trigger CD
-	@bash scripts/cd-test-k8s-apply.sh
+	@bash scripts/cd-test-k8s-apply.sh $(ARGS)
 
 cd-test-k8s-revert: ## Revert the k8s-only change and trigger CD
-	@bash scripts/cd-test-k8s-revert.sh
+	@bash scripts/cd-test-k8s-revert.sh $(ARGS)
