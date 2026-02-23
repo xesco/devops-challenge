@@ -27,14 +27,16 @@ resource "google_sql_database_instance" "postgres" {
 }
 
 resource "google_sql_database" "currencies" {
-  name     = "currencies"
-  instance = google_sql_database_instance.postgres.name
+  name            = "currencies"
+  instance        = google_sql_database_instance.postgres.name
+  deletion_policy = "ABANDON" # Let instance deletion cascade; avoids "being accessed by other users" error
 }
 
 resource "google_sql_user" "postgres" {
-  name     = "postgres"
-  instance = google_sql_database_instance.postgres.name
-  password = random_password.postgres.result
+  name            = "postgres"
+  instance        = google_sql_database_instance.postgres.name
+  password        = random_password.postgres.result
+  deletion_policy = "ABANDON" # Let instance deletion cascade; avoids "role cannot be dropped" error
 }
 
 # Service account used by the Cloud SQL Auth Proxy sidecar
