@@ -256,7 +256,7 @@ To run a migration manually (e.g. after a fresh Cloud SQL instance):
 
 ```bash
 make migrate           # latest migrator image
-make migrate SHA=<sha> # pin to a specific image
+make migrate TAG=<tag> # pin to a specific version
 ```
 
 > **ARM64 note:** Local Docker builds on Raspberry Pi produce ARM64 images,

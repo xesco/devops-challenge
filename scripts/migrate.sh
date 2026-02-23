@@ -13,26 +13,26 @@ REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/devops-challenge"
 OVERLAY="k8s/migration"
 
 if [[ -n "${1:-}" ]]; then
-  SHA="${1}"
-  echo "Using specified SHA: ${SHA}"
+  TAG="${1}"
+  echo "Using specified tag: ${TAG}"
 else
   echo "Looking up latest migrator image..."
-  SHA=$(gcloud artifacts docker images list "${REGISTRY}/migrator" \
+  TAG=$(gcloud artifacts docker images list "${REGISTRY}/migrator" \
     --include-tags \
     --sort-by=~CREATE_TIME \
     --limit=1 \
     --format='value(tags)' 2>/dev/null)
-  [[ -n "${SHA}" ]] || { echo "No migrator image found in Artifact Registry" >&2; exit 1; }
-  echo "Latest migrator tag: ${SHA}"
+  [[ -n "${TAG}" ]] || { echo "No migrator image found in Artifact Registry" >&2; exit 1; }
+  echo "Latest migrator tag: ${TAG}"
 fi
 
 echo "Registry: ${REGISTRY}"
-echo "Image:    ${REGISTRY}/migrator:${SHA}"
+echo "Image:    ${REGISTRY}/migrator:${TAG}"
 
 kubectl -n moonpay delete job prisma-migrate --ignore-not-found
 
 cd "${OVERLAY}"
-kustomize edit set image migrator="${REGISTRY}/migrator:${SHA}"
+kustomize edit set image migrator="${REGISTRY}/migrator:${TAG}"
 kubectl apply -k .
 kustomize edit set image migrator=migrator:latest
 git checkout -- kustomization.yaml

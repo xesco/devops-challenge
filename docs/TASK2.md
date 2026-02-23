@@ -37,7 +37,7 @@ reachable from the internet, serving live cryptocurrency prices.
 | `Makefile`                                    | Modify | Add `migrate` target (calls `scripts/migrate.sh`) |
 | `scripts/create.sh`                           | Create | Bootstrap infra (bucket + Terraform + creds) |
 | `scripts/destroy.sh`                          | Create | Tear down infra and delete state bucket       |
-| `scripts/migrate.sh`                          | Create | Run migration Job against live cluster (latest image or `SHA=`) |
+| `scripts/migrate.sh`                          | Create | Run migration Job against live cluster (latest image or `TAG=`) |
 | `scripts/cd-test-apply.sh`                    | Create | CD test: add Litecoin + mark heading         |
 | `scripts/cd-test-revert.sh`                   | Create | CD test: remove Litecoin + revert heading    |
 | `scripts/cd-test-k8s-apply.sh`                | Create | CD test: scale replicas + tighten probe      |
@@ -207,7 +207,7 @@ Terraform init/apply/destroy, GKE credentials. `show-ip` prints the external
 LoadBalancer IP. `migrate` runs the migration Job manually against the live
 cluster — useful after a Cloud SQL swap or when no migration files changed (so
 `migrate.yaml` didn't trigger). Default: latest migrator image from Artifact
-Registry; override with `make migrate SHA=<sha>`.
+Registry; override with `make migrate TAG=<tag>`.
 
 `cd-test-apply`/`cd-test-revert` exercise the full CD pipeline: create a
 Prisma migration (insert/delete test currency), change heading, commit, push.

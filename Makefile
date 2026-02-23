@@ -18,8 +18,8 @@ show-ip: ## Print the external LoadBalancer IP
 		-o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 	@echo
 
-migrate: ## Run the migration Job (latest migrator image, or SHA=<sha> to pin)
-	@bash scripts/migrate.sh $(if $(SHA),$(SHA),)
+migrate: ## Run the migration Job (latest migrator image, or TAG=<tag> to pin)
+	@bash scripts/migrate.sh $(if $(TAG),$(TAG),)
 
 cd-test-apply: ## Push a test change (new currency + heading) to trigger CD
 	@bash scripts/cd-test-apply.sh $(ARGS)
