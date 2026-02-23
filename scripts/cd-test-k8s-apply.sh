@@ -14,7 +14,7 @@ DEPLOY="k8s/base/nextjs/deployment.yaml"
 sed -i.bak 's/minReplicas: 2/minReplicas: 4/' "$HPA" && rm "${HPA}.bak"
 
 # Liveness probe failureThreshold 3 -> 6
-sed -i.bak '/livenessProbe/,/failureThreshold/{s/failureThreshold: 3/failureThreshold: 6/}' "$DEPLOY" && rm "${DEPLOY}.bak"
+sed -i.bak '/livenessProbe/,/failureThreshold/s/failureThreshold: 3/failureThreshold: 6/' "$DEPLOY" && rm "${DEPLOY}.bak"
 
 # Stage and show diff
 git add "$HPA" "$DEPLOY"
