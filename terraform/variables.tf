@@ -34,12 +34,3 @@ variable "github_repository" {
   }
 }
 
-variable "github_reviewers" {
-  description = "GitHub usernames allowed to approve production deployments"
-  type        = list(string)
-
-  validation {
-    condition     = length(var.github_reviewers) > 0
-    error_message = "github_reviewers must contain at least one username."
-  }
-}

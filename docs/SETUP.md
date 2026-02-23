@@ -183,11 +183,10 @@ Edit `terraform/terraform.tfvars`:
 - `region` - GCP region (default `us-central1`)
 - `github_owner` - your GitHub username or organization
 - `github_repository` - repo name (without owner prefix)
-- `github_reviewers` - GitHub usernames who can approve production deploys
 
 ### 17. Authenticate GitHub CLI
 
-Terraform GitHub provider needs a token for repo environment and secrets.
+Terraform GitHub provider needs a token for repo secrets.
 
 ```bash
 mise use -g gh@latest
@@ -216,8 +215,7 @@ This runs `scripts/create.sh`:
 
 Creates: GKE Autopilot cluster (~10 min), Cloud SQL for PostgreSQL instance
 (~5 min, `db-f1-micro` ZONAL), Artifact Registry, deployer SA + IAM roles,
-`cloudsql-client` SA with `roles/cloudsql.client`, GitHub `production`
-environment (approval gate), repo secrets (`GCP_SA_KEY`, `GCP_PROJECT_ID`),
+`cloudsql-client` SA with `roles/cloudsql.client`, repo secrets (`GCP_SA_KEY`, `GCP_PROJECT_ID`),
 K8s `moonpay` namespace, K8s `postgres-connection` secret (full connection
 string + instance connection name), K8s `cloudsql-credentials` secret (SA key
 JSON for the Auth Proxy sidecar).
@@ -239,10 +237,8 @@ automatically:
 1. **build** — builds and pushes two images to Artifact Registry:
    - `…/nextjs:v1.2.3` (app, runner stage)
    - `…/migrator:v1.2.3` (Prisma CLI, migrator stage)
-2. **migrate** — applies and waits for the migration Job to complete (fully
-   automatic, no approval required)
-3. **deploy** — applies K8s manifests and waits for the rollout (fully
-   automatic, no approval gate)
+2. **migrate** — applies and waits for the migration Job to complete
+3. **deploy** — applies K8s manifests and waits for the rollout
 
 **Full flow:** push a `feat:` or `fix:` commit → `release.yml` cuts `v1.2.3`
 → builds images → migrates → deploys. No manual intervention required.

@@ -185,11 +185,9 @@ jobs then run automatically with `needs: release`:
    to Artifact Registry.
 2. **migrate** — patches the migration kustomization with the new migrator
    image, deletes any previous `prisma-migrate` Job (avoids immutability
-   conflicts), applies the Job, waits up to 120s for completion. Runs
-   automatically — no approval required.
+   conflicts), applies the Job, waits up to 120s for completion.
 3. **deploy** — patches the app kustomization with the new `v1.2.3` tag,
-   applies manifests, waits for the rollout. Runs automatically — no approval
-   gate.
+   applies manifests, waits for the rollout.
 
 `chore:` commits push to `main` but never trigger a release or deploy. Images
 are tagged with the semantic version (`v1.2.3`), not a git SHA.
@@ -211,8 +209,8 @@ Registry; override with `make migrate TAG=<tag>`.
 
 `cd-test-apply`/`cd-test-revert` exercise the full CD pipeline: create a
 Prisma migration (insert/delete test currency), change heading, commit, push.
-Pipeline builds new images, runs migrations, and deploys automatically — no
-approval required. All cd-test scripts check for dirty working tree first.
+Pipeline builds new images, runs migrations, and deploys automatically.
+All cd-test scripts check for dirty working tree first.
 
 All four `cd-test-*` targets accept `ARGS=-d` (or `ARGS=--dry-run`) to preview
 changes without committing or pushing. Dry run applies changes temporarily,

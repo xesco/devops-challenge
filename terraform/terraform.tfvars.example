@@ -3,4 +3,3 @@ region     = "us-central1"
 
 github_owner      = "xesco"
 github_repository = "devops-challenge"
-github_reviewers  = ["xesco"]
