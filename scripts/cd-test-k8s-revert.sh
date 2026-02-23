@@ -14,12 +14,14 @@ sed -i.bak 's/minReplicas: 4/minReplicas: 2/' "$HPA" && rm "${HPA}.bak"
 sed -i.bak '/livenessProbe/,/failureThreshold/{s/failureThreshold: 6/failureThreshold: 3/}' "$DEPLOY" && rm "${DEPLOY}.bak"
 
 git add "$HPA" "$DEPLOY"
-git diff --cached --quiet || git commit -m "CD test (k8s): revert replicas and liveness failureThreshold"
+git diff --cached --quiet || git commit -m "fix: CD test (k8s): revert replicas and liveness failureThreshold"
+git pull --rebase origin main
 git push origin main
 
 REPO_URL=$(gh repo view --json url -q .url)
 echo ""
-echo "Pushed. Approve the deploy at:"
+echo "Pushed. release.yml will cut a new patch release, build images, run migrations,"
+echo "and deploy automatically. Follow at:"
 echo "  ${REPO_URL}/actions"
 echo ""
 echo "Verify with:"

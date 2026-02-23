@@ -23,10 +23,11 @@ grep -q '(CD Test)' app/page.tsx || { sed -i.bak 's/LatestPrices/LatestPrices (C
 # Commit and push
 git add prisma/migrations/ app/page.tsx
 git diff --cached --quiet || git commit -m "feat: CD test: add Litecoin and mark heading"
+git pull --rebase origin main
 git push origin main
 
 REPO_URL=$(gh repo view --json url -q .url)
 echo ""
-echo "Pushed. release.yml will cut a new version, then deploy.yml will build,"
-echo "run migrations, and wait for approval at:"
+echo "Pushed. release.yml will cut a new version, build images, run migrations,"
+echo "and deploy automatically. Follow at:"
 echo "  ${REPO_URL}/actions"
