@@ -7,8 +7,8 @@ DRY_RUN=false
 git diff --quiet && git diff --cached --quiet \
   || { echo "Working tree is dirty. Commit or stash changes first." >&2; exit 1; }
 
-HPA="k8s/base/nextjs/hpa.yaml"
-DEPLOY="k8s/base/nextjs/deployment.yaml"
+HPA="k8s/app/hpa.yaml"
+DEPLOY="k8s/app/deployment.yaml"
 
 # Scale HPA minReplicas 2 -> 4
 sed -i.bak 's/minReplicas: 2/minReplicas: 4/' "$HPA" && rm "${HPA}.bak"

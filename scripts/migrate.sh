@@ -10,7 +10,7 @@ PROJECT_ID=$(gcloud config get project 2>/dev/null)
 REGION=$(gcloud config get compute/region 2>/dev/null || true)
 REGION="${REGION:-us-central1}"
 REGISTRY="${REGION}-docker.pkg.dev/${PROJECT_ID}/devops-challenge"
-OVERLAY="k8s/overlays/production/migration"
+OVERLAY="k8s/migration"
 
 if [[ -n "${1:-}" ]]; then
   SHA="${1}"
@@ -23,7 +23,7 @@ else
     --limit=1 \
     --format='value(tags)' 2>/dev/null)
   [[ -n "${SHA}" ]] || { echo "No migrator image found in Artifact Registry" >&2; exit 1; }
-  echo "Latest migrator SHA: ${SHA}"
+  echo "Latest migrator tag: ${SHA}"
 fi
 
 echo "Registry: ${REGISTRY}"

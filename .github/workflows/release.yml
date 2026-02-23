@@ -95,7 +95,7 @@ jobs:
 
       - name: Build and push migrator image
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:migrator-${{ needs.release.outputs.version }}"
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/migrator:${{ needs.release.outputs.version }}"
           docker build --target migrator -t "${IMAGE}" .
           docker push "${IMAGE}"
 
@@ -124,8 +124,8 @@ jobs:
 
       - name: Set migrator image tag
         run: |
-          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:migrator-${{ needs.release.outputs.version }}"
-          cd k8s/overlays/production/migration
+          IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/migrator:${{ needs.release.outputs.version }}"
+          cd k8s/migration
           kustomize edit set image migrator="${IMAGE}"
 
       - name: Delete previous migration Job if present
@@ -133,7 +133,7 @@ jobs:
           kubectl delete job prisma-migrate -n ${{ env.NAMESPACE }} --ignore-not-found
 
       - name: Apply migration Job
-        run: kubectl apply -k k8s/overlays/production/migration
+        run: kubectl apply -k k8s/migration
 
       - name: Wait for migration to complete
         run: |
@@ -168,11 +168,11 @@ jobs:
       - name: Set app image tag
         run: |
           IMAGE="${{ env.REGISTRY }}/${{ secrets.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/nextjs:${{ needs.release.outputs.version }}"
-          cd k8s/overlays/production
+          cd k8s/app
           kustomize edit set image nextjs="${IMAGE}"
 
       - name: Apply manifests
-        run: kubectl apply -k k8s/overlays/production
+        run: kubectl apply -k k8s/app
 
       - name: Wait for rollout
         run: |

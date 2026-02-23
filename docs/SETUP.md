@@ -238,7 +238,7 @@ automatically:
 
 1. **build** — builds and pushes two images to Artifact Registry:
    - `…/nextjs:v1.2.3` (app, runner stage)
-   - `…/nextjs:migrator-v1.2.3` (Prisma CLI, migrator stage)
+   - `…/migrator:v1.2.3` (Prisma CLI, migrator stage)
 2. **migrate** — applies and waits for the migration Job to complete (fully
    automatic, no approval required)
 3. **deploy** — applies K8s manifests and waits for the rollout (fully

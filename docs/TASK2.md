@@ -23,15 +23,13 @@ reachable from the internet, serving live cryptocurrency prices.
 | `terraform/kubernetes.tf`                     | Create | K8s provider, namespace, `postgres-connection` + `cloudsql-credentials` secrets |
 | `terraform/random.tf`                         | Create | Auto-generated PostgreSQL password + Cloud SQL instance name suffix |
 | `terraform/terraform.tfvars.example`          | Create | Placeholder variable values                |
-| `k8s/base/kustomization.yaml`                | Create | Resource list and common labels            |
-| `k8s/base/nextjs/deployment.yaml`            | Create | App with probes, rolling update, security, Cloud SQL Auth Proxy sidecar |
-| `k8s/base/nextjs/service.yaml`               | Create | LoadBalancer for external access           |
-| `k8s/base/nextjs/hpa.yaml`                   | Create | Horizontal pod autoscaler                  |
-| `k8s/base/nextjs/pdb.yaml`                   | Create | PodDisruptionBudget (minAvailable: 1)      |
-| `k8s/base/migration/job.yaml`                | Create | Prisma migration Job with Cloud SQL Auth Proxy sidecar |
-| `k8s/base/migration/kustomization.yaml`      | Create | Standalone kustomization for migration Job |
-| `k8s/overlays/production/kustomization.yaml` | Create | Image tag transformer (nextjs)             |
-| `k8s/overlays/production/migration/kustomization.yaml` | Create | Image tag transformer (migrator) |
+| `k8s/app/kustomization.yaml`                 | Create | Resource list, namespace, and image tag transformer (nextjs) |
+| `k8s/app/deployment.yaml`                    | Create | App with probes, rolling update, security, Cloud SQL Auth Proxy sidecar |
+| `k8s/app/service.yaml`                       | Create | LoadBalancer for external access           |
+| `k8s/app/hpa.yaml`                           | Create | Horizontal pod autoscaler                  |
+| `k8s/app/pdb.yaml`                           | Create | PodDisruptionBudget (minAvailable: 1)      |
+| `k8s/migration/job.yaml`                     | Create | Prisma migration Job with Cloud SQL Auth Proxy sidecar |
+| `k8s/migration/kustomization.yaml`           | Create | Resource list, namespace, and image tag transformer (migrator) |
 | `.github/workflows/release.yml`              | Create | Full pipeline: semantic versioning + build + migrate + deploy, all triggered on push to main |
 | `.releaserc.json`                             | Create | semantic-release config (5 plugins)        |
 | `scripts/prepare-release.sh`                 | Create | Updates `package.json` version field       |
@@ -155,9 +153,11 @@ custom domain. Next.js Service changes to ClusterIP.
 
 ### Kustomize over Helm
 
-Built into `kubectl`, no extra tooling. Base manifests are valid YAML usable
-with plain `kubectl apply -f`. Patch-based model simpler than Go templates for
-a single-environment project.
+Built into `kubectl`, no extra tooling. Manifests are valid YAML usable
+with plain `kubectl apply -f`. Simpler than Go templates for a
+single-environment project. Two flat directories (`k8s/app/` and
+`k8s/migration/`) — CI/CD uses `kustomize edit set image` to inject the
+versioned Artifact Registry image at deploy time.
 
 ### GitHub Actions CI/CD
 
@@ -180,8 +180,8 @@ minor version, a `fix:` bumps the patch, `BREAKING CHANGE:` bumps major,
 auto-generated release notes, and pushes a `vX.Y.Z` tag. Three downstream
 jobs then run automatically with `needs: release`:
 
-1. **build** — authenticates to GCP, builds the `runner` stage tagged
-   `v1.2.3` and the `migrator` stage tagged `migrator-v1.2.3`, pushes both
+1. **build** — authenticates to GCP, builds two images tagged `v1.2.3`:
+   `nextjs` (runner stage) and `migrator` (migrator stage), pushes both
    to Artifact Registry.
 2. **migrate** — patches the migration kustomization with the new migrator
    image, deletes any previous `prisma-migrate` Job (avoids immutability

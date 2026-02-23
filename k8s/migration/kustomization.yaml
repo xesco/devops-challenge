@@ -1,12 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: moonpay
+
 resources:
-  - ../../base
+  - job.yaml
 
 # Image tag set by CI/CD via:
-#   kustomize edit set image nextjs=REGISTRY/nextjs:SHA
+#   kustomize edit set image migrator=REGISTRY/migrator:TAG
 images:
-  - name: nextjs
-    newName: nextjs
+  - name: migrator
+    newName: migrator
     newTag: latest
